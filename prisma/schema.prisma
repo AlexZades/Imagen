@@ -115,31 +115,6 @@ model ImageStyle {
   @@index([styleId])
 }
 
-model SimpleTag {
-  id         String   @id @default(uuid())
-  tag        String   @unique
-  usageCount Int      @default(0)
-  category   String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@index([usageCount])
-  @@index([tag])
-}
-
-model ImageSimpleTag {
-  id        String   @id @default(uuid())
-  imageId   String
-  simpleTag String
-  createdAt DateTime @default(now())
-
-  image Image @relation(fields: [imageId], references: [id], onDelete: Cascade)
-
-  @@unique([imageId, simpleTag])
-  @@index([imageId])
-  @@index([simpleTag])
-}
-
 model GenerationConfig {
   id        String   @id @default(uuid())
   key       String   @unique
