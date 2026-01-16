@@ -8,22 +8,22 @@ async function checkSchema() {
 
     // Try to query each table
     const tables = [
-      'User',
-      'Image',
-      'Tag',
-      'Style',
-      'Like',
-      'ImageTag',
-      'ImageStyle',
-      'GenerationConfig',
+      { name: 'User', model: 'user' },
+      { name: 'Image', model: 'image' },
+      { name: 'Tag', model: 'tag' },
+      { name: 'Style', model: 'style' },
+      { name: 'Like', model: 'like' },
+      { name: 'ImageTag', model: 'imageTag' },
+      { name: 'ImageStyle', model: 'imageStyle' },
+      { name: 'GenerationConfig', model: 'generationConfig' },
     ];
 
     for (const table of tables) {
       try {
-        const count = await (prisma as any)[table.toLowerCase()].count();
-        console.log(`✅ ${table}: ${count} records`);
+        const count = await (prisma as any)[table.model].count();
+        console.log(`✅ ${table.name}: ${count} records`);
       } catch (error: any) {
-        console.log(`❌ ${table}: ${error.message}`);
+        console.log(`❌ ${table.name}: ${error.message}`);
       }
     }
 

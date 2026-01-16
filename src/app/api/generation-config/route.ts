@@ -13,7 +13,6 @@ interface GenerationConfig {
   key: string;
   value: string;
   createdAt: Date;
-  updatedAt: Date;
 }
 
 export async function GET(request: NextRequest) {
@@ -51,7 +50,6 @@ export async function GET(request: NextRequest) {
           key: 'fallback_tags',
           value: DEFAULT_FALLBACK_TAGS.join(', '),
           createdAt: new Date(),
-          updatedAt: new Date(),
         };
       }
 

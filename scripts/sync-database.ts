@@ -1,7 +1,7 @@
 /**
  * Sync Database Schema
  * 
- * This script adds missing columns to the database to match the Prisma schema.
+ * This script checks the database schema and reports any issues.
  * Run this if you get "column does not exist" errors.
  */
 
@@ -10,77 +10,30 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function syncDatabase() {
-  console.log('🔄 Syncing database schema...\n');
+  console.log('🔄 Checking database schema...\n');
 
   try {
-    // Add updatedAt to User table
-    console.log('Adding updatedAt to User table...');
-    await prisma.$executeRaw`
-      DO $$ 
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.columns 
-          WHERE table_name = 'User' AND column_name = 'updatedAt'
-        ) THEN
-          ALTER TABLE "User" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
-          UPDATE "User" SET "updatedAt" = "createdAt";
-        END IF;
-      END $$;
-    `;
-    console.log('✅ User table updated\n');
+    // Check all tables exist
+    const tables = ['User', 'Image', 'Tag', 'Style', 'Like', 'ImageTag', 'ImageStyle', 'GenerationConfig'];
+    
+    for (const table of tables) {
+      try {
+        const result = await prisma.$queryRaw`
+          SELECT COUNT(*) as count FROM information_schema.tables 
+          WHERE table_name = ${table}
+        `;
+        console.log(`✅ Table ${table} exists`);
+      } catch (error: any) {
+        console.log(`❌ Table ${table} missing or error: ${error.message}`);
+      }
+    }
 
-    // Add updatedAt to Tag table
-    console.log('Adding updatedAt to Tag table...');
-    await prisma.$executeRaw`
-      DO $$ 
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.columns 
-          WHERE table_name = 'Tag' AND column_name = 'updatedAt'
-        ) THEN
-          ALTER TABLE "Tag" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
-          UPDATE "Tag" SET "updatedAt" = "createdAt";
-        END IF;
-      END $$;
-    `;
-    console.log('✅ Tag table updated\n');
-
-    // Add updatedAt to Style table
-    console.log('Adding updatedAt to Style table...');
-    await prisma.$executeRaw`
-      DO $$ 
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.columns 
-          WHERE table_name = 'Style' AND column_name = 'updatedAt'
-        ) THEN
-          ALTER TABLE "Style" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
-          UPDATE "Style" SET "updatedAt" = "createdAt";
-        END IF;
-      END $$;
-    `;
-    console.log('✅ Style table updated\n');
-
-    // Add updatedAt to GenerationConfig table
-    console.log('Adding updatedAt to GenerationConfig table...');
-    await prisma.$executeRaw`
-      DO $$ 
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.columns 
-          WHERE table_name = 'GenerationConfig' AND column_name = 'updatedAt'
-        ) THEN
-          ALTER TABLE "GenerationConfig" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
-          UPDATE "GenerationConfig" SET "updatedAt" = "createdAt";
-        END IF;
-      END $$;
-    `;
-    console.log('✅ GenerationConfig table updated\n');
-
-    console.log('🎉 Database sync complete!');
+    console.log('\n🎉 Database check complete!');
+    console.log('\nIf you see missing tables, run:');
+    console.log('  npx prisma migrate deploy');
 
   } catch (error: any) {
-    console.error('❌ Error syncing database:', error.message);
+    console.error('❌ Error checking database:', error.message);
     throw error;
   } finally {
     await prisma.$disconnect();
