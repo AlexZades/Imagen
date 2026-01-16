@@ -2,7 +2,7 @@ services:
   web:
     container_name: pixelvault-web
     environment:
-      COMFYUI_API_URL: 
+      COMFYUI_API_URL: apiurl
       DATABASE_URL: postgresql://admin:password@hostname:port/databaseName?schema=public
       NODE_ENV: production
       PORT:4144
