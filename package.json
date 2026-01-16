@@ -13,7 +13,8 @@
     "migrate:simple-tags": "cross-env-shell prisma migrate deploy && prisma generate",
     "populate:simple-tags": "tsx scripts/populate-simple-tags.ts",
     "check:simple-tags": "tsx scripts/check-simple-tags.ts",
-    "test:simple-tags": "tsx scripts/test-simple-tag-creation.ts"
+    "test:simple-tags": "tsx scripts/test-simple-tag-creation.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
