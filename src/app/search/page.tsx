@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Navbar } from '@/components/navbar';
@@ -29,7 +29,7 @@ interface Style {
   name: string;
 }
 
-export default function SearchPage() {
+function SearchContent() {
   const searchParams = useSearchParams();
   const tagId = searchParams?.get('tag') || null;
   const styleId = searchParams?.get('style') || null;
@@ -152,39 +152,51 @@ export default function SearchPage() {
   };
 
   return (
+    <main className="flex-1 container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-2">
+          {getSearchIcon()}
+          <h1 className="text-3xl font-bold">{getSearchTitle()}</h1>
+        </div>
+        <p className="text-muted-foreground">
+          {isLoading ? 'Loading...' : `${images.length} image${images.length !== 1 ? 's' : ''} found`}
+        </p>
+      </div>
+
+      {isLoading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {[...Array(10)].map((_, i) => (
+            <LoadingSkeleton key={i} />
+          ))}
+        </div>
+      ) : images.length === 0 ? (
+        <div className="text-center py-12 bg-muted/30 rounded-lg">
+          <p className="text-muted-foreground">No images found with this filter.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {images.map((image) => (
+            <ImageCard key={image.id} image={image} />
+          ))}
+        </div>
+      )}
+    </main>
+  );
+}
+
+export default function SearchPage() {
+  return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            {getSearchIcon()}
-            <h1 className="text-3xl font-bold">{getSearchTitle()}</h1>
+      <Suspense fallback={
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center py-12">
+            <p className="text-muted-foreground">Loading search results...</p>
           </div>
-          <p className="text-muted-foreground">
-            {isLoading ? 'Loading...' : `${images.length} image${images.length !== 1 ? 's' : ''} found`}
-          </p>
-        </div>
-
-        {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {[...Array(10)].map((_, i) => (
-              <LoadingSkeleton key={i} />
-            ))}
-          </div>
-        ) : images.length === 0 ? (
-          <div className="text-center py-12 bg-muted/30 rounded-lg">
-            <p className="text-muted-foreground">No images found with this filter.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {images.map((image) => (
-              <ImageCard key={image.id} image={image} />
-            ))}
-          </div>
-        )}
-      </main>
-
+        </main>
+      }>
+        <SearchContent />
+      </Suspense>
       <MadeWithDyad />
     </div>
   );
