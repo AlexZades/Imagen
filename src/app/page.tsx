@@ -1,0 +1,197 @@
+"use client";
+
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Navbar } from '@/components/navbar';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Heart, Eye, Sparkles, Clock, Shuffle } from 'lucide-react';
+import { MadeWithDyad } from '@/components/made-with-dyad';
+import { useAuth } from '@/contexts/auth-context';
+
+interface Image {
+  id: string;
+  title: string;
+  imageUrl: string;
+  thumbnailUrl?: string;
+  likeCount: number;
+  viewCount: number;
+  createdAt: string;
+}
+
+export default function Home() {
+  const { user } = useAuth();
+  const [recommendedImages, setRecommendedImages] = useState<Image[]>([]);
+  const [newImages, setNewImages] = useState<Image[]>([]);
+  const [randomImages, setRandomImages] = useState<Image[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchImages();
+  }, [user]);
+
+  const fetchImages = async () => {
+    try {
+      const [recommendedRes, newRes, randomRes] = await Promise.all([
+        fetch(`/api/images/recommended${user ? `?userId=${user.id}` : ''}`),
+        fetch('/api/images?limit=8&sort=new'),
+        fetch('/api/images?limit=8&sort=random'),
+      ]);
+
+      const recommendedData = await recommendedRes.json();
+      const newData = await newRes.json();
+      const randomData = await randomRes.json();
+
+      setRecommendedImages(recommendedData.images || []);
+      setNewImages(newData.images || []);
+      setRandomImages(randomData.images || []);
+    } catch (error) {
+      console.error('Error fetching images:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const ImageCard = ({ image, size = 'medium' }: { image: Image; size?: 'large' | 'medium' }) => {
+    const isLarge = size === 'large';
+    
+    return (
+      <Link href={`/image/${image.id}`}>
+        <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer h-full">
+          <div className={`relative bg-muted ${isLarge ? 'aspect-[4/3]' : 'aspect-square'}`}>
+            <img
+              src={image.thumbnailUrl || image.imageUrl}
+              alt={image.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300" />
+          </div>
+          <CardContent className={`${isLarge ? 'p-4' : 'p-3'}`}>
+            <h3 className={`font-medium truncate mb-2 ${isLarge ? 'text-lg' : 'text-base'}`}>
+              {image.title}
+            </h3>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Heart className="w-4 h-4" />
+                {image.likeCount}
+              </div>
+              <div className="flex items-center gap-1">
+                <Eye className="w-4 h-4" />
+                {image.viewCount}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </Link>
+    );
+  };
+
+  const LoadingSkeleton = ({ size = 'medium' }: { size?: 'large' | 'medium' }) => {
+    const isLarge = size === 'large';
+    
+    return (
+      <Card className="overflow-hidden h-full">
+        <div className={`bg-muted animate-pulse ${isLarge ? 'aspect-[4/3]' : 'aspect-square'}`} />
+        <CardContent className={`${isLarge ? 'p-4' : 'p-3'}`}>
+          <div className={`bg-muted animate-pulse rounded ${isLarge ? 'h-6 mb-3' : 'h-5 mb-2'}`} />
+          <div className="flex gap-3">
+            <div className="bg-muted animate-pulse rounded h-4 w-12" />
+            <div className="bg-muted animate-pulse rounded h-4 w-12" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+
+      <main className="flex-1 container mx-auto px-4 py-8 space-y-12">
+        {/* Recommended Images - Large */}
+        <section>
+          <div className="flex items-center gap-2 mb-6">
+            <Sparkles className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-semibold">Recommended</h2>
+          </div>
+
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(3)].map((_, i) => (
+                <LoadingSkeleton key={i} size="large" />
+              ))}
+            </div>
+          ) : recommendedImages.length === 0 ? (
+            <div className="text-center py-12 bg-muted/30 rounded-lg">
+              <p className="text-muted-foreground">
+                {user 
+                  ? 'Start liking images to get personalized recommendations!' 
+                  : 'No images available yet. Be the first to upload!'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recommendedImages.slice(0, 3).map((image) => (
+                <ImageCard key={image.id} image={image} size="large" />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* New Images - Medium */}
+        <section>
+          <div className="flex items-center gap-2 mb-6">
+            <Clock className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-semibold">Newest</h2>
+          </div>
+
+          {isLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {[...Array(8)].map((_, i) => (
+                <LoadingSkeleton key={i} size="medium" />
+              ))}
+            </div>
+          ) : newImages.length === 0 ? (
+            <div className="text-center py-12 bg-muted/30 rounded-lg">
+              <p className="text-muted-foreground">No new images yet.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {newImages.map((image) => (
+                <ImageCard key={image.id} image={image} size="medium" />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Random Images - Medium */}
+        <section>
+          <div className="flex items-center gap-2 mb-6">
+            <Shuffle className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-semibold">Random</h2>
+          </div>
+
+          {isLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {[...Array(8)].map((_, i) => (
+                <LoadingSkeleton key={i} size="medium" />
+              ))}
+            </div>
+          ) : randomImages.length === 0 ? (
+            <div className="text-center py-12 bg-muted/30 rounded-lg">
+              <p className="text-muted-foreground">No images to discover yet.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {randomImages.map((image) => (
+                <ImageCard key={image.id} image={image} size="medium" />
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+
+      <MadeWithDyad />
+    </div>
+  );
+}

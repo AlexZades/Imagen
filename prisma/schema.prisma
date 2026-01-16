@@ -1,0 +1,129 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  avatarUrl    String?
+  isAdmin      Boolean  @default(false)
+
+  images Image[]
+  likes  Like[]
+
+  @@map("User")
+}
+
+model Image {
+  id                String   @id @default(cuid())
+  userId            String
+  title             String
+  description       String?
+  promptTags        String?
+  imageUrl          String
+  thumbnailUrl      String?
+  filename          String
+  thumbnailFilename String?
+  width             Int
+  height            Int
+  size              Int
+  createdAt         DateTime @default(now())
+  viewCount         Int      @default(0)
+  likeCount         Int      @default(0)
+  dislikeCount      Int      @default(0)
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  imageTags   ImageTag[]
+  imageStyles ImageStyle[]
+  likes       Like[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("Image")
+}
+
+model Tag {
+  id               String   @id @default(cuid())
+  name             String   @unique
+  createdAt        DateTime @default(now())
+  usageCount       Int      @default(0)
+  loras            String[]
+  minStrength      Float?
+  maxStrength      Float?
+  forcedPromptTags String?
+
+  imageTags ImageTag[]
+
+  @@map("Tag")
+}
+
+model Style {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  createdAt      DateTime @default(now())
+  usageCount     Int      @default(0)
+  description    String?
+  checkpointName String?
+
+  imageStyles ImageStyle[]
+
+  @@map("Style")
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  imageId   String
+  isLike    Boolean
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  image Image @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, imageId])
+  @@index([userId])
+  @@index([imageId])
+  @@map("Like")
+}
+
+model ImageTag {
+  id        String   @id @default(cuid())
+  imageId   String
+  tagId     String
+  createdAt DateTime @default(now())
+
+  image Image @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  tag   Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([imageId, tagId])
+  @@index([imageId])
+  @@index([tagId])
+  @@map("ImageTag")
+}
+
+model ImageStyle {
+  id        String   @id @default(cuid())
+  imageId   String
+  styleId   String
+  createdAt DateTime @default(now())
+
+  image Image @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  style Style @relation(fields: [styleId], references: [id], onDelete: Cascade)
+
+  @@unique([imageId, styleId])
+  @@index([imageId])
+  @@index([styleId])
+  @@map("ImageStyle")
+}

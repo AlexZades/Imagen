@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  web:
+    image: ghcr.io/your-github-username/your-repo-name:latest
+    container_name: pixelvault-web
+    ports:
+      - "3000:3000"
+    volumes:
+      - pixelvault_uploads:/app/public/uploads
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: "postgresql://admin:internal1234@192.168.0.17:5432/Imagen?schema=public"
+      # COMFYUI_API_URL: "http://your-comfyui-instance:8188"
+      # AUTO_GENERATION_SECRET: "your-secret-token-here"
+    restart: unless-stopped
+
+volumes:
+  pixelvault_uploads:
+    # Volume for storing uploaded images and thumbnails

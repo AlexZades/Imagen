@@ -1,0 +1,80 @@
+{
+  "users": [
+    {
+      "id": "9ad1b9d0549791b338af2fa05325145e",
+      "username": "Seripha",
+      "email": "az@st4r.io",
+      "passwordHash": "2efa3e8b6d77577c3cb5c65c481e82cebef959253073ab689656422f86404951",
+      "createdAt": "2026-01-16T02:11:07.377Z",
+      "isAdmin": true
+    }
+  ],
+  "images": [
+    {
+      "id": "5c646916d39878bb3ee7aae1f229a60a",
+      "userId": "9ad1b9d0549791b338af2fa05325145e",
+      "title": "Kirlia before bed",
+      "description": "",
+      "promptTags": "kirlia, hand on hip, doimant,blue lingerie",
+      "imageUrl": "/uploads/b57b72b823b0d7a042738bd6cd187ac6.png",
+      "thumbnailUrl": "/uploads/thumbnails/thumb_b57b72b823b0d7a042738bd6cd187ac6.png",
+      "filename": "b57b72b823b0d7a042738bd6cd187ac6.png",
+      "thumbnailFilename": "thumb_b57b72b823b0d7a042738bd6cd187ac6.png",
+      "width": 1344,
+      "height": 1728,
+      "size": 2394524,
+      "createdAt": "2026-01-16T02:30:19.526Z",
+      "viewCount": 6,
+      "likeCount": 1,
+      "dislikeCount": 0
+    }
+  ],
+  "tags": [
+    {
+      "id": "b9b3971e2099d106639012b7d47d47ed",
+      "name": "Saltyxodium Kirlia",
+      "createdAt": "2026-01-16T02:30:04.841Z",
+      "usageCount": 1,
+      "loras": [
+        "saltyxodium_kirlia_il_v1.safetensors"
+      ],
+      "minStrength": 0,
+      "maxStrength": 1
+    }
+  ],
+  "styles": [
+    {
+      "id": "ec49221d0308fbe392e647909df180fc",
+      "name": "FurryV2",
+      "createdAt": "2026-01-16T02:30:15.670Z",
+      "usageCount": 1,
+      "description": "Model for generating furry characters",
+      "checkpointName": "furrytoonmix_xlIllustriousV2.safetensors"
+    }
+  ],
+  "likes": [
+    {
+      "id": "01449c0672dc2a200b09aef0c7e230f0",
+      "userId": "9ad1b9d0549791b338af2fa05325145e",
+      "imageId": "5c646916d39878bb3ee7aae1f229a60a",
+      "isLike": true,
+      "createdAt": "2026-01-16T02:30:42.180Z"
+    }
+  ],
+  "imageTags": [
+    {
+      "id": "a2939a7ef0113c2a274ed1442290c8d9",
+      "imageId": "5c646916d39878bb3ee7aae1f229a60a",
+      "tagId": "b9b3971e2099d106639012b7d47d47ed",
+      "createdAt": "2026-01-16T02:30:19.526Z"
+    }
+  ],
+  "imageStyles": [
+    {
+      "id": "b7be3e46f2ad545e157d3acfd65072e2",
+      "imageId": "5c646916d39878bb3ee7aae1f229a60a",
+      "styleId": "ec49221d0308fbe392e647909df180fc",
+      "createdAt": "2026-01-16T02:30:19.526Z"
+    }
+  ]
+}
