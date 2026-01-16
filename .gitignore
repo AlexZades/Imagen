@@ -43,6 +43,7 @@ next-env.d.ts
 
 # prisma
 /generated/prisma
+# Note: prisma/schema.prisma should NOT be ignored - it's required!
 
 # database backups
 backup_*.sql
