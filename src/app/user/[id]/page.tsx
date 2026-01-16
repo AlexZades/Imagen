@@ -28,20 +28,24 @@ interface Image {
 
 export default function UserProfilePage() {
   const params = useParams();
+  const userId = params?.id as string | undefined;
+  
   const [user, setUser] = useState<User | null>(null);
   const [images, setImages] = useState<Image[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (params.id) {
+    if (userId) {
       fetchUserAndImages();
     }
-  }, [params.id]);
+  }, [userId]);
 
   const fetchUserAndImages = async () => {
+    if (!userId) return;
+    
     try {
       const [imagesResponse] = await Promise.all([
-        fetch(`/api/images?userId=${params.id}`),
+        fetch(`/api/images?userId=${userId}`),
       ]);
 
       const imagesData = await imagesResponse.json();
