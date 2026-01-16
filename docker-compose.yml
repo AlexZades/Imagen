@@ -2,27 +2,40 @@ version: '3.8'
 
 services:
   web:
-    # Option 1: Use pre-built image from GitHub Container Registry
-    # Replace 'your-github-username/your-repo-name' with your actual GitHub repo
-    image: ghcr.io/AlexZades/AlexZades:latest
+    # Use pre-built image from GitHub Container Registry
+    # Replace 'alexzades/alexzades' with your actual GitHub repo path
+    image: ghcr.io/alexzades/alexzades:latest
     
-    # Option 2: Uncomment to build locally instead
+    # Uncomment to build locally instead
     # build:
     #   context: .
     #   dockerfile: Dockerfile
     
     container_name: pixelvault-web
+    
     ports:
       - "4144:4144"
+    
     volumes:
       - pixelvault_uploads:/app/public/uploads
+    
     environment:
-      NODE_ENV: production
-      DATABASE_URL: "postgresql://admin:internal1234@192.168.0.17:5432/Imagen?schema=public"
-      COMFYUI_API_URL: "http://192.168.0.16:3000"
-      # AUTO_GENERATION_SECRET: "your-secret-token-here"
+      - NODE_ENV=production
+      - PORT=4144
+      - DATABASE_URL=postgresql://admin:internal1234@192.168.0.17:5432/Imagen?schema=public
+      - COMFYUI_API_URL=http://192.168.0.16:3000
+      # - AUTO_GENERATION_SECRET=your-secret-token-here
+    
     restart: unless-stopped
+    
+    # Health check to ensure the app is running
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4144"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   pixelvault_uploads:
-    # Volume for storing uploaded images and thumbnails
+    driver: local

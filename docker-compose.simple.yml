@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  web:
+    image: ghcr.io/alexzades/alexzades:latest
+    container_name: pixelvault-web
+    ports:
+      - "4144:4144"
+    environment:
+      - DATABASE_URL=postgresql://admin:internal1234@192.168.0.17:5432/Imagen?schema=public
+      - COMFYUI_API_URL=http://192.168.0.16:3000
+    restart: unless-stopped
