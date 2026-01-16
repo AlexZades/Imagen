@@ -5,13 +5,13 @@ services:
     image: ghcr.io/your-github-username/your-repo-name:latest
     container_name: pixelvault-web
     ports:
-      - "3000:3000"
+      - "80:80"
     volumes:
       - pixelvault_uploads:/app/public/uploads
     environment:
       NODE_ENV: production
       DATABASE_URL: "postgresql://admin:internal1234@192.168.0.17:5432/Imagen?schema=public"
-      COMFYUI_API_URL: "http://192.168.0.16:8188"
+      COMFYUI_API_URL: "http://192.168.0.16:3000"
       # AUTO_GENERATION_SECRET: "your-secret-token-here"
     restart: unless-stopped
 
