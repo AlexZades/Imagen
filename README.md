@@ -2,7 +2,7 @@
 
 A self-hosted image hosting and browsing platform with AI-powered image generation using ComfyUI. I made this for myself using dyad but if it sounds like something you want to run feel free to try it.
 
-Users can't directly generate images using this service, instead the service generates images based on the tags and parameters of uploaded and liked images. In other words, new images are generated based on user behvaior preferences. 
+Users can't directly generate images using this service, instead the service generates images based on the tags and parameters of uploaded and liked images. In other words, new images are generated based on user behavior preferences. 
 ## Requirments
 You need a computer capable of running SDXL models comfortably or you will frequently run into OOM errors. (1ggb of vram or more)
 I've only tested this on NVIDIA gpus so I'm not sure if it will run on other hardware.
