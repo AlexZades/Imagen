@@ -1,12 +1,17 @@
-# Stage 1: Dependencies
-FROM node:18-alpine AS deps
-RUN apk add --no-cache libc6-compat openssl
+FROM node:18-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy package files
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+COPY package.json package-lock.json* yarn.lock* pnpm-lock.yaml* ./
 
-# Install dependencies with legacy peer deps for npm
+# Copy Prisma schema BEFORE npm install (needed for postinstall script)
+COPY prisma ./prisma/
+
+# Install dependencies based on the preferred package manager
 RUN \
   if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
   elif [ -f package-lock.json ]; then npm ci --legacy-peer-deps; \
@@ -14,58 +19,49 @@ RUN \
   else echo "Lockfile not found." && exit 1; \
   fi
 
-# Stage 2: Builder
-FROM node:18-alpine AS builder
-RUN apk add --no-cache libc6-compat openssl
+# Rebuild the source code only when needed
+FROM base AS builder
 WORKDIR /app
-
-# Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
-
-# Copy application code
 COPY . .
 
-# CRITICAL: Ensure Prisma schema is present
-RUN ls -la prisma/ || echo "Warning: prisma directory not found"
-RUN test -f prisma/schema.prisma || (echo "ERROR: prisma/schema.prisma not found!" && exit 1)
-
-# Generate Prisma Client
+# Generate Prisma client (in case it wasn't generated in deps stage)
 RUN npx prisma generate
 
-# Build Next.js application
-ENV NEXT_TELEMETRY_DISABLED=1
+# Build the application
 RUN \
-  if [ -f yarn.lock ]; then yarn build; \
+  if [ -f yarn.lock ]; then yarn run build; \
   elif [ -f package-lock.json ]; then npm run build; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
   else echo "Lockfile not found." && exit 1; \
   fi
 
-# Stage 3: Runner
-FROM node:18-alpine AS runner
-RUN apk add --no-cache openssl
+# Production image, copy all the files and run next
+FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
 
-# Create non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy necessary files from builder
+# Copy public assets
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+
+# Set the correct permission for prerender cache
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
+
+# Automatically leverage output traces to reduce image size
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy Prisma files for runtime
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
 # Create uploads directory
-RUN mkdir -p /app/public/uploads/thumbnails
-RUN chown -R nextjs:nodejs /app/public/uploads
+RUN mkdir -p public/uploads/thumbnails && chown -R nextjs:nodejs public/uploads
 
 USER nextjs
 
