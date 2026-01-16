@@ -2,6 +2,32 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { deleteImage } from '@/lib/upload';
 
+interface ImageTag {
+  tag: {
+    id: string;
+    name: string;
+    loras?: string[];
+    minStrength?: number;
+    maxStrength?: number;
+    forcedPromptTags?: string;
+    usageCount: number;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+}
+
+interface ImageStyle {
+  style: {
+    id: string;
+    name: string;
+    description?: string;
+    checkpointName?: string;
+    usageCount: number;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -45,8 +71,8 @@ export async function GET(
     });
 
     // Extract tags and styles
-    const tags = image.imageTags.map((it: { tag: any }) => it.tag);
-    const styles = image.imageStyles.map((is: { style: any }) => is.style);
+    const tags = image.imageTags.map((it: ImageTag) => it.tag);
+    const styles = image.imageStyles.map((is: ImageStyle) => is.style);
 
     return NextResponse.json({
       image: {

@@ -34,6 +34,21 @@ export interface GenerationConfig {
   loraWeightVariation: number; // 0-1
 }
 
+interface Tag {
+  id: string;
+  name: string;
+  loras?: string[];
+  minStrength?: number;
+  maxStrength?: number;
+  forcedPromptTags?: string;
+}
+
+interface Style {
+  id: string;
+  name: string;
+  checkpointName?: string;
+}
+
 export interface UserPreferenceProfile {
   userId: string;
   likedImages: Array<{
@@ -71,6 +86,18 @@ export interface GenerationReport {
   startTime: Date;
   endTime: Date;
   durationMs: number;
+}
+
+interface ImageWithPromptTags {
+  promptTags: string | null;
+}
+
+interface GenerationConfigRecord {
+  id: string;
+  key: string;
+  value: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // ==================== Default Configuration ====================
@@ -142,10 +169,10 @@ async function getFallbackTags(): Promise<string[]> {
   try {
     const config = await prisma.generationConfig.findUnique({
       where: { key: 'fallback_tags' }
-    });
+    }) as GenerationConfigRecord | null;
 
     if (config && config.value) {
-      return config.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+      return config.value.split(',').map((t: string) => t.trim()).filter((t: string) => t.length > 0);
     }
   } catch (error) {
     console.error('Error fetching fallback tags:', error);
@@ -166,21 +193,21 @@ async function getAvailableSimpleTags(): Promise<string[]> {
       select: {
         promptTags: true,
       },
-    });
+    }) as ImageWithPromptTags[];
 
     if (images.length > 0) {
       // Parse and count all tags
       const tagCounts = new Map<string, number>();
       
-      images.forEach((image) => {
+      images.forEach((image: ImageWithPromptTags) => {
         if (!image.promptTags) return;
         
         const tags = image.promptTags
           .split(',')
-          .map((tag) => tag.trim().toLowerCase())
-          .filter((tag) => tag.length > 0);
+          .map((tag: string) => tag.trim().toLowerCase())
+          .filter((tag: string) => tag.length > 0);
         
-        tags.forEach((tag) => {
+        tags.forEach((tag: string) => {
           tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
         });
       });
@@ -357,11 +384,11 @@ function rollDice(probability: number): boolean {
 // ==================== LoRA Weight Calculation ====================
 
 function calculateLoraWeights(
-  tags: any[],
+  tags: Tag[],
   config: GenerationConfig,
   variationMultiplier: number
 ): number[] {
-  return tags.map((tag: any) => {
+  return tags.map((tag: Tag) => {
     const minStrength = tag.minStrength ?? 1;
     const maxStrength = tag.maxStrength ?? 1;
     const baseWeight = randomFloat(minStrength, maxStrength);
@@ -376,12 +403,12 @@ function calculateLoraWeights(
 async function generateCloseRecommendation(
   profile: UserPreferenceProfile,
   config: GenerationConfig,
-  allTags: any[],
-  allStyles: any[]
-): Promise<{ tags: any[]; style: any; simpleTags: string[]; loraWeights: number[] }> {
+  allTags: Tag[],
+  allStyles: Style[]
+): Promise<{ tags: Tag[]; style: Style; simpleTags: string[]; loraWeights: number[] }> {
   const baseImage = randomChoice(profile.likedImages);
   
-  let selectedTags = [...baseImage.tags];
+  let selectedTags = [...baseImage.tags] as Tag[];
   let selectedSimpleTags = [...baseImage.simpleTags];
   
   selectedSimpleTags = selectedSimpleTags.filter(() => !rollDice(config.closeDropProbability));
@@ -409,13 +436,13 @@ async function generateCloseRecommendation(
   
   selectedTags = selectedTags.slice(0, config.maxTagsPerImage);
   
-  let selectedStyle = baseImage.style;
+  let selectedStyle = baseImage.style as Style | null;
   if (rollDice(config.styleVariationProbability) && profile.topStyles.length > 0) {
     const styleChoice = weightedRandomChoice(
       profile.topStyles,
       profile.topStyles.map((s: any) => s.count)
     );
-    selectedStyle = allStyles.find((s: any) => s.id === styleChoice.id) || selectedStyle;
+    selectedStyle = allStyles.find((s: Style) => s.id === styleChoice.id) || selectedStyle;
   }
   
   if (!selectedStyle && profile.topStyles.length > 0) {
@@ -423,7 +450,7 @@ async function generateCloseRecommendation(
       profile.topStyles,
       profile.topStyles.map((s: any) => s.count)
     );
-    selectedStyle = allStyles.find((s: any) => s.id === styleChoice.id);
+    selectedStyle = allStyles.find((s: Style) => s.id === styleChoice.id) || null;
   }
   
   if (!selectedStyle) {
@@ -443,19 +470,19 @@ async function generateCloseRecommendation(
 async function generateMixedRecommendation(
   profile: UserPreferenceProfile,
   config: GenerationConfig,
-  allTags: any[],
-  allStyles: any[]
-): Promise<{ tags: any[]; style: any; simpleTags: string[]; loraWeights: number[] }> {
+  allTags: Tag[],
+  allStyles: Style[]
+): Promise<{ tags: Tag[]; style: Style; simpleTags: string[]; loraWeights: number[] }> {
   const poolSize = Math.min(config.mixedPoolSize, profile.likedImages.length);
   const sourceImages = randomChoices(profile.likedImages, poolSize);
   
   const pooledTags = sourceImages.flatMap((img: any) => img.tags);
   const pooledSimpleTags = sourceImages.flatMap((img: any) => img.simpleTags);
   
-  const uniqueTags = Array.from(new Map(pooledTags.map((t: any) => [t.id, t])).values());
+  const uniqueTags = Array.from(new Map(pooledTags.map((t: any) => [t.id, t])).values()) as Tag[];
   const uniqueSimpleTags = Array.from(new Set(pooledSimpleTags));
   
-  let selectedTags: any[];
+  let selectedTags: Tag[];
   if (rollDice(config.multiTagProbability) && uniqueTags.length > 1) {
     const numTags = randomInt(2, Math.min(config.maxTagsPerImage, uniqueTags.length));
     selectedTags = randomChoices(uniqueTags, numTags);
@@ -466,18 +493,16 @@ async function generateMixedRecommendation(
   const numSimpleTags = randomInt(config.randomMinTags, Math.min(config.randomMaxTags, uniqueSimpleTags.length));
   const selectedSimpleTags = randomChoices(uniqueSimpleTags, numSimpleTags);
   
-  let selectedStyle: any;
+  let selectedStyle: Style;
   if (rollDice(config.styleVariationProbability) && profile.topStyles.length > 0) {
     const styleChoice = weightedRandomChoice(
       profile.topStyles,
       profile.topStyles.map((s: any) => s.count)
     );
-    selectedStyle = allStyles.find((s: any) => s.id === styleChoice.id);
+    selectedStyle = allStyles.find((s: Style) => s.id === styleChoice.id) || randomChoice(allStyles);
   } else if (profile.topStyles.length > 0) {
-    selectedStyle = allStyles.find((s: any) => s.id === profile.topStyles[0].id);
-  }
-  
-  if (!selectedStyle) {
+    selectedStyle = allStyles.find((s: Style) => s.id === profile.topStyles[0].id) || randomChoice(allStyles);
+  } else {
     selectedStyle = randomChoice(allStyles);
   }
   
@@ -493,9 +518,9 @@ async function generateMixedRecommendation(
 
 async function generateRandomImage(
   config: GenerationConfig,
-  allTags: any[],
-  allStyles: any[]
-): Promise<{ tags: any[]; style: any; simpleTags: string[]; loraWeights: number[] }> {
+  allTags: Tag[],
+  allStyles: Style[]
+): Promise<{ tags: Tag[]; style: Style; simpleTags: string[]; loraWeights: number[] }> {
   const useMultipleTags = rollDice(config.multiTagProbability);
   const numTags = useMultipleTags
     ? randomInt(2, Math.min(config.maxTagsPerImage, 4))
@@ -644,13 +669,13 @@ export async function generateImagesForUser(
       where: {
         loras: { isEmpty: false },
       },
-    });
+    }) as Tag[];
 
     const allStyles = await prisma.style.findMany({
       where: {
         checkpointName: { not: null },
       },
-    });
+    }) as Style[];
 
     if (allTags.length === 0 || allStyles.length === 0) {
       throw new Error('No tags or styles available for generation');
@@ -667,19 +692,19 @@ export async function generateImagesForUser(
           );
 
           const loraNames: string[] = [];
-          tags.forEach((tag: any) => {
+          tags.forEach((tag: Tag) => {
             if (tag.loras && Array.isArray(tag.loras)) {
               loraNames.push(...tag.loras.slice(0, 4 - loraNames.length));
             }
           });
 
-          const tagNames = tags.map((t: any) => t.name).join(', ');
+          const tagNames = tags.map((t: Tag) => t.name).join(', ');
           const simpleTagsStr = simpleTags.join(', ');
           const fullPrompt = tagNames ? `${tagNames}, ${simpleTagsStr}` : simpleTagsStr;
 
           const base64Image = await callComfyUIAPI(
             fullPrompt,
-            style.checkpointName,
+            style.checkpointName!,
             loraNames.slice(0, 4),
             loraWeights.slice(0, 4)
           );
@@ -689,7 +714,7 @@ export async function generateImagesForUser(
             base64Image,
             `Close Recommendation ${i + 1}`,
             simpleTagsStr,
-            tags.map((t: any) => t.id),
+            tags.map((t: Tag) => t.id),
             style.id,
             'close'
           );
@@ -700,7 +725,7 @@ export async function generateImagesForUser(
             generationType: 'close',
             userId,
             prompt: fullPrompt,
-            tags: tags.map((t: any) => t.name),
+            tags: tags.map((t: Tag) => t.name),
             style: style.name,
           });
         } catch (error: any) {
@@ -729,19 +754,19 @@ export async function generateImagesForUser(
           );
 
           const loraNames: string[] = [];
-          tags.forEach((tag: any) => {
+          tags.forEach((tag: Tag) => {
             if (tag.loras && Array.isArray(tag.loras)) {
               loraNames.push(...tag.loras.slice(0, 4 - loraNames.length));
             }
           });
 
-          const tagNames = tags.map((t: any) => t.name).join(', ');
+          const tagNames = tags.map((t: Tag) => t.name).join(', ');
           const simpleTagsStr = simpleTags.join(', ');
           const fullPrompt = tagNames ? `${tagNames}, ${simpleTagsStr}` : simpleTagsStr;
 
           const base64Image = await callComfyUIAPI(
             fullPrompt,
-            style.checkpointName,
+            style.checkpointName!,
             loraNames.slice(0, 4),
             loraWeights.slice(0, 4)
           );
@@ -751,7 +776,7 @@ export async function generateImagesForUser(
             base64Image,
             `Mixed Recommendation ${i + 1}`,
             simpleTagsStr,
-            tags.map((t: any) => t.id),
+            tags.map((t: Tag) => t.id),
             style.id,
             'mixed'
           );
@@ -762,7 +787,7 @@ export async function generateImagesForUser(
             generationType: 'mixed',
             userId,
             prompt: fullPrompt,
-            tags: tags.map((t: any) => t.name),
+            tags: tags.map((t: Tag) => t.name),
             style: style.name,
           });
         } catch (error: any) {
@@ -789,19 +814,19 @@ export async function generateImagesForUser(
         );
 
         const loraNames: string[] = [];
-        tags.forEach((tag: any) => {
+        tags.forEach((tag: Tag) => {
           if (tag.loras && Array.isArray(tag.loras)) {
             loraNames.push(...tag.loras.slice(0, 4 - loraNames.length));
           }
         });
 
-        const tagNames = tags.map((t: any) => t.name).join(', ');
+        const tagNames = tags.map((t: Tag) => t.name).join(', ');
         const simpleTagsStr = simpleTags.join(', ');
         const fullPrompt = tagNames ? `${tagNames}, ${simpleTagsStr}` : simpleTagsStr;
 
         const base64Image = await callComfyUIAPI(
           fullPrompt,
-          style.checkpointName,
+          style.checkpointName!,
           loraNames.slice(0, 4),
           loraWeights.slice(0, 4)
         );
@@ -811,7 +836,7 @@ export async function generateImagesForUser(
           base64Image,
           `Random Generation ${i + 1}`,
           simpleTagsStr,
-          tags.map((t: any) => t.id),
+          tags.map((t: Tag) => t.id),
           style.id,
           'random'
         );
@@ -822,7 +847,7 @@ export async function generateImagesForUser(
           generationType: 'random',
           userId,
           prompt: fullPrompt,
-          tags: tags.map((t: any) => t.name),
+          tags: tags.map((t: Tag) => t.name),
           style: style.name,
         });
       } catch (error: any) {

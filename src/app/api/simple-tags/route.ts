@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+interface ImageWithPromptTags {
+  promptTags: string | null;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -24,20 +28,20 @@ export async function GET(request: NextRequest) {
       select: {
         promptTags: true,
       },
-    });
+    }) as ImageWithPromptTags[];
 
     // Parse and count all tags
     const tagCounts = new Map<string, number>();
     
-    images.forEach((image) => {
+    images.forEach((image: ImageWithPromptTags) => {
       if (!image.promptTags) return;
       
       const tags = image.promptTags
         .split(',')
-        .map((tag) => tag.trim().toLowerCase())
-        .filter((tag) => tag.length > 0);
+        .map((tag: string) => tag.trim().toLowerCase())
+        .filter((tag: string) => tag.length > 0);
       
-      tags.forEach((tag) => {
+      tags.forEach((tag: string) => {
         tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
       });
     });
