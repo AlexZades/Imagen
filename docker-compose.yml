@@ -5,7 +5,7 @@ services:
     image: ghcr.io/your-github-username/your-repo-name:latest
     container_name: pixelvault-web
     ports:
-      - "80:80"
+      - "4144:4144"
     volumes:
       - pixelvault_uploads:/app/public/uploads
     environment:
