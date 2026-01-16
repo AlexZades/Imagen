@@ -1,37 +1,16 @@
-version: '3.8'
-
 services:
   web:
-    # Build locally instead of pulling from GHCR
-    build:
-      context: .
-      dockerfile: Dockerfile
-    
     container_name: pixelvault-web
-    
+    environment:
+      COMFYUI_API_URL: 
+      DATABASE_URL: postgresql://admin:password@hostname:port/databaseName?schema=public
+      NODE_ENV: production
+      PORT:4144
+    image: ghcr.io/alexzades/imagen:latest
     ports:
-      - "4144:4144"
-    
+      - '4144:4144'
+    restart: unless-stopped
     volumes:
       - pixelvault_uploads:/app/public/uploads
-    
-    environment:
-      - NODE_ENV=production
-      - PORT=4144
-      - HOSTNAME=0.0.0.0
-      - DATABASE_URL=postgresql://admin:internal1234@192.168.0.17:5432/Imagen?schema=public
-      - COMFYUI_API_URL=http://192.168.0.16:3000
-      # - AUTO_GENERATION_SECRET=your-secret-token-here
-    
-    restart: unless-stopped
-    
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4144"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
 volumes:
-  pixelvault_uploads:
-    driver: local
+  pixelvault_uploads: Null
