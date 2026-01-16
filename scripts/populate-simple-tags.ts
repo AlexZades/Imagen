@@ -14,6 +14,11 @@ dotenv.config();
 
 import { prisma } from '../src/lib/prisma';
 
+interface ImageWithPromptTags {
+  id: string;
+  promptTags: string | null;
+}
+
 async function populateSimpleTags() {
   console.log('🔄 Starting simple tags population...\n');
 
@@ -34,7 +39,7 @@ async function populateSimpleTags() {
         id: true,
         promptTags: true,
       },
-    });
+    }) as ImageWithPromptTags[];
 
     console.log(`📊 Found ${images.length} images with prompt tags\n`);
 
@@ -52,8 +57,8 @@ async function populateSimpleTags() {
       // Parse tags
       const tags = image.promptTags
         .split(',')
-        .map((tag) => tag.trim().toLowerCase())
-        .filter((tag) => tag.length > 0);
+        .map((tag: string) => tag.trim().toLowerCase())
+        .filter((tag: string) => tag.length > 0);
 
       if (tags.length === 0) continue;
 
@@ -61,7 +66,7 @@ async function populateSimpleTags() {
         // Create ImageSimpleTag records
         // The trigger will automatically create/update SimpleTag records
         await prisma.imageSimpleTag.createMany({
-          data: tags.map((tag) => ({
+          data: tags.map((tag: string) => ({
             imageId: image.id,
             simpleTag: tag,
           })),
@@ -74,8 +79,9 @@ async function populateSimpleTags() {
         if (processedImages % 10 === 0) {
           console.log(`  Processed ${processedImages}/${images.length} images...`);
         }
-      } catch (error: any) {
-        console.error(`  ⚠️  Error processing image ${image.id}:`, error.message);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`  ⚠️  Error processing image ${image.id}:`, errorMessage);
       }
     }
 
@@ -112,9 +118,12 @@ async function populateSimpleTags() {
     console.log(`  - Total tag uses: ${stats._sum.usageCount || 0}`);
     console.log(`  - Average uses per tag: ${(stats._avg.usageCount || 0).toFixed(2)}`);
 
-  } catch (error: any) {
-    console.error('❌ Error:', error.message);
-    console.error('Full error:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Error:', errorMessage);
+    if (error instanceof Error) {
+      console.error('Full error:', error);
+    }
     throw error;
   } finally {
     await prisma.$disconnect();
@@ -127,7 +136,8 @@ populateSimpleTags()
     console.log('\n✅ Script completed successfully');
     process.exit(0);
   })
-  .catch((error) => {
-    console.error('\n❌ Script failed:', error);
+  .catch((error: unknown) => {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('\n❌ Script failed:', errorMessage);
     process.exit(1);
   });

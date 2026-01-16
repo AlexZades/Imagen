@@ -7,6 +7,29 @@ dotenv.config();
 
 import { prisma } from '../src/lib/prisma';
 
+interface ImageSimpleTagWithImage {
+  id: string;
+  imageId: string;
+  simpleTag: string;
+  createdAt: Date;
+  image: {
+    title: string;
+  };
+}
+
+interface ImageWithPromptTags {
+  id: string;
+  title: string;
+  promptTags: string | null;
+  createdAt: Date;
+}
+
+interface TriggerInfo {
+  trigger_name: string;
+  event_manipulation: string;
+  event_object_table: string;
+}
+
 async function checkSimpleTags() {
   console.log('🔍 Checking Simple Tags Setup...\n');
 
@@ -29,9 +52,10 @@ async function checkSimpleTags() {
             }
           }
         }
-      });
+      }) as ImageSimpleTagWithImage[];
+      
       console.log('  - Sample records:');
-      sampleImageSimpleTags.forEach(ist => {
+      sampleImageSimpleTags.forEach((ist: ImageSimpleTagWithImage) => {
         console.log(`    • Image: "${ist.image.title}" → Tag: "${ist.simpleTag}"`);
       });
     }
@@ -69,10 +93,10 @@ async function checkSimpleTags() {
         promptTags: true,
         createdAt: true,
       }
-    });
+    }) as ImageWithPromptTags[];
     
     console.log(`  - Found ${recentImages.length} recent images:`);
-    recentImages.forEach(img => {
+    recentImages.forEach((img: ImageWithPromptTags) => {
       console.log(`    • "${img.title}"`);
       console.log(`      ID: ${img.id}`);
       console.log(`      Prompt Tags: ${img.promptTags || '(none)'}`);
@@ -82,7 +106,7 @@ async function checkSimpleTags() {
 
     // Check if triggers exist
     console.log('🔧 Checking database triggers...');
-    const triggers = await prisma.$queryRaw<any[]>`
+    const triggers = await prisma.$queryRaw<TriggerInfo[]>`
       SELECT trigger_name, event_manipulation, event_object_table
       FROM information_schema.triggers
       WHERE trigger_name LIKE 'simple_tag%'
@@ -90,7 +114,7 @@ async function checkSimpleTags() {
     
     if (triggers.length > 0) {
       console.log('  ✅ Triggers found:');
-      triggers.forEach(t => {
+      triggers.forEach((t: TriggerInfo) => {
         console.log(`    • ${t.trigger_name} (${t.event_manipulation} on ${t.event_object_table})`);
       });
     } else {
@@ -107,7 +131,7 @@ async function checkSimpleTags() {
     console.log(`  - Triggers: ${triggers.length}`);
     console.log();
 
-    if (imageSimpleTagCount === 0 && recentImages.some(img => img.promptTags)) {
+    if (imageSimpleTagCount === 0 && recentImages.some((img: ImageWithPromptTags) => img.promptTags)) {
       console.log('⚠️  ISSUE DETECTED:');
       console.log('  Images have promptTags but no ImageSimpleTag records exist.');
       console.log('  This means tags are not being saved when images are created.');
@@ -127,8 +151,9 @@ async function checkSimpleTags() {
       console.log('  Run: npx prisma migrate deploy');
     }
 
-  } catch (error: any) {
-    console.error('❌ Error:', error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Error:', errorMessage);
     throw error;
   } finally {
     await prisma.$disconnect();
@@ -140,7 +165,8 @@ checkSimpleTags()
     console.log('✅ Check complete');
     process.exit(0);
   })
-  .catch((error) => {
-    console.error('❌ Check failed:', error);
+  .catch((error: unknown) => {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Check failed:', errorMessage);
     process.exit(1);
   });

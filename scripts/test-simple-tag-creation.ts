@@ -10,6 +10,16 @@ dotenv.config();
 
 import { prisma } from '../src/lib/prisma';
 
+interface FunctionInfo {
+  proname: string;
+}
+
+interface TriggerInfo {
+  trigger_name: string;
+  event_manipulation: string;
+  event_object_table: string;
+}
+
 async function testSimpleTagCreation() {
   console.log('🧪 Testing Simple Tag Creation...\n');
 
@@ -24,9 +34,15 @@ async function testSimpleTagCreation() {
 
     if (!testImage) {
       console.log('📝 No images found, creating a test image...');
+      const firstUser = await prisma.user.findFirst();
+      
+      if (!firstUser) {
+        throw new Error('No users found in database');
+      }
+      
       testImage = await prisma.image.create({
         data: {
-          userId: (await prisma.user.findFirst())!.id,
+          userId: firstUser.id,
           title: 'Test Image for Simple Tags',
           promptTags: 'test-tag-1, test-tag-2, test-tag-3',
           imageUrl: '/test.png',
@@ -48,7 +64,7 @@ async function testSimpleTagCreation() {
     const testTags = ['test-standing', 'test-smiling', 'test-outdoors'];
     
     await prisma.imageSimpleTag.createMany({
-      data: testTags.map(tag => ({
+      data: testTags.map((tag: string) => ({
         imageId: testImage.id,
         simpleTag: tag,
       })),
@@ -62,7 +78,7 @@ async function testSimpleTagCreation() {
       where: { imageId: testImage.id }
     });
     console.log(`✅ Found ${imageSimpleTags.length} ImageSimpleTag records:`);
-    imageSimpleTags.forEach(ist => {
+    imageSimpleTags.forEach((ist) => {
       console.log(`  - ${ist.simpleTag}`);
     });
     console.log();
@@ -83,7 +99,7 @@ async function testSimpleTagCreation() {
       console.log('   This will create the triggers.\n');
     } else {
       console.log(`✅ Found ${simpleTags.length} SimpleTag records:`);
-      simpleTags.forEach(st => {
+      simpleTags.forEach((st) => {
         console.log(`  - "${st.tag}" (usageCount: ${st.usageCount})`);
       });
       console.log('\n✅ Triggers are working correctly!\n');
@@ -91,7 +107,7 @@ async function testSimpleTagCreation() {
 
     // Test 4: Check trigger functions exist
     console.log('📝 Test 4: Checking if trigger functions exist...');
-    const functions = await prisma.$queryRaw<any[]>`
+    const functions = await prisma.$queryRaw<FunctionInfo[]>`
       SELECT proname 
       FROM pg_proc 
       WHERE proname LIKE '%simple_tag%'
@@ -102,7 +118,7 @@ async function testSimpleTagCreation() {
       console.log('   Run: npx prisma migrate deploy\n');
     } else {
       console.log('✅ Found trigger functions:');
-      functions.forEach(f => {
+      functions.forEach((f: FunctionInfo) => {
         console.log(`  - ${f.proname}`);
       });
       console.log();
@@ -110,7 +126,7 @@ async function testSimpleTagCreation() {
 
     // Test 5: Check triggers exist
     console.log('📝 Test 5: Checking if triggers exist...');
-    const triggers = await prisma.$queryRaw<any[]>`
+    const triggers = await prisma.$queryRaw<TriggerInfo[]>`
       SELECT trigger_name, event_manipulation, event_object_table
       FROM information_schema.triggers
       WHERE trigger_name LIKE 'simple_tag%'
@@ -121,7 +137,7 @@ async function testSimpleTagCreation() {
       console.log('   Run: npx prisma migrate deploy\n');
     } else {
       console.log('✅ Found triggers:');
-      triggers.forEach(t => {
+      triggers.forEach((t: TriggerInfo) => {
         console.log(`  - ${t.trigger_name} (${t.event_manipulation} on ${t.event_object_table})`);
       });
       console.log();
@@ -133,9 +149,12 @@ async function testSimpleTagCreation() {
     console.log(`  - Trigger functions: ${functions.length}`);
     console.log(`  - Triggers: ${triggers.length}`);
 
-  } catch (error: any) {
-    console.error('❌ Error:', error.message);
-    console.error('Full error:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Error:', errorMessage);
+    if (error instanceof Error) {
+      console.error('Full error:', error);
+    }
     throw error;
   } finally {
     await prisma.$disconnect();
@@ -147,7 +166,8 @@ testSimpleTagCreation()
     console.log('\n✅ Test complete');
     process.exit(0);
   })
-  .catch((error) => {
-    console.error('\n❌ Test failed:', error);
+  .catch((error: unknown) => {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('\n❌ Test failed:', errorMessage);
     process.exit(1);
   });
