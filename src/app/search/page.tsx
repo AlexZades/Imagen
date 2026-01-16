@@ -31,9 +31,9 @@ interface Style {
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
-  const tagId = searchParams.get('tag');
-  const styleId = searchParams.get('style');
-  const simpleTag = searchParams.get('simpleTag');
+  const tagId = searchParams?.get('tag') || null;
+  const styleId = searchParams?.get('style') || null;
+  const simpleTag = searchParams?.get('simpleTag') || null;
 
   const [images, setImages] = useState<Image[]>([]);
   const [tagInfo, setTagInfo] = useState<Tag | null>(null);
