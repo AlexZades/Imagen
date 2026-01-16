@@ -20,6 +20,22 @@ interface TriggerInfo {
   event_object_table: string;
 }
 
+interface ImageSimpleTagRecord {
+  id: string;
+  imageId: string;
+  simpleTag: string;
+  createdAt: Date;
+}
+
+interface SimpleTagRecord {
+  id: string;
+  tag: string;
+  usageCount: number;
+  category: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 async function testSimpleTagCreation() {
   console.log('🧪 Testing Simple Tag Creation...\n');
 
@@ -76,9 +92,10 @@ async function testSimpleTagCreation() {
     console.log('📝 Test 2: Checking ImageSimpleTag records...');
     const imageSimpleTags = await prisma.imageSimpleTag.findMany({
       where: { imageId: testImage.id }
-    });
+    }) as ImageSimpleTagRecord[];
+    
     console.log(`✅ Found ${imageSimpleTags.length} ImageSimpleTag records:`);
-    imageSimpleTags.forEach((ist) => {
+    imageSimpleTags.forEach((ist: ImageSimpleTagRecord) => {
       console.log(`  - ${ist.simpleTag}`);
     });
     console.log();
@@ -89,7 +106,7 @@ async function testSimpleTagCreation() {
       where: {
         tag: { in: testTags }
       }
-    });
+    }) as SimpleTagRecord[];
     
     if (simpleTags.length === 0) {
       console.log('❌ PROBLEM FOUND: No SimpleTag records created!');
@@ -99,7 +116,7 @@ async function testSimpleTagCreation() {
       console.log('   This will create the triggers.\n');
     } else {
       console.log(`✅ Found ${simpleTags.length} SimpleTag records:`);
-      simpleTags.forEach((st) => {
+      simpleTags.forEach((st: SimpleTagRecord) => {
         console.log(`  - "${st.tag}" (usageCount: ${st.usageCount})`);
       });
       console.log('\n✅ Triggers are working correctly!\n');

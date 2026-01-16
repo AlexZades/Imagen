@@ -19,6 +19,15 @@ interface ImageWithPromptTags {
   promptTags: string | null;
 }
 
+interface SimpleTagRecord {
+  id: string;
+  tag: string;
+  usageCount: number;
+  category: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 async function populateSimpleTags() {
   console.log('🔄 Starting simple tags population...\n');
 
@@ -95,10 +104,10 @@ async function populateSimpleTags() {
         usageCount: 'desc',
       },
       take: 10,
-    });
+    }) as SimpleTagRecord[];
 
     console.log(`\n📊 Top 10 Simple Tags:`);
-    topTags.forEach((tag, index) => {
+    topTags.forEach((tag: SimpleTagRecord, index: number) => {
       console.log(`  ${index + 1}. ${tag.tag} (${tag.usageCount} uses)`);
     });
 

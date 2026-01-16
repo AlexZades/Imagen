@@ -24,6 +24,15 @@ interface ImageWithPromptTags {
   createdAt: Date;
 }
 
+interface SimpleTagRecord {
+  id: string;
+  tag: string;
+  usageCount: number;
+  category: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface TriggerInfo {
   trigger_name: string;
   event_manipulation: string;
@@ -72,9 +81,10 @@ async function checkSimpleTags() {
         orderBy: {
           usageCount: 'desc'
         }
-      });
+      }) as SimpleTagRecord[];
+      
       console.log('  - Top 10 tags:');
-      topTags.forEach((tag, idx) => {
+      topTags.forEach((tag: SimpleTagRecord, idx: number) => {
         console.log(`    ${idx + 1}. "${tag.tag}" (used ${tag.usageCount} times)`);
       });
     }
