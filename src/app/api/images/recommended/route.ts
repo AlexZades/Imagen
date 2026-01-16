@@ -1,6 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+interface ImageTag {
+  tagId: string;
+  tag: {
+    id: string;
+    name: string;
+  };
+}
+
+interface LikedImage {
+  id: string;
+  imageTags: ImageTag[];
+}
+
+interface UserLike {
+  userId: string;
+  imageId: string;
+  isLike: boolean;
+  image: LikedImage;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -37,12 +57,12 @@ export async function GET(request: NextRequest) {
           }
         }
       }
-    });
+    }) as UserLike[];
 
     // Extract unique tag IDs from liked images
     const likedTagIds = new Set<string>();
-    userLikes.forEach((like: any) => {
-      like.image.imageTags.forEach((imageTag: any) => {
+    userLikes.forEach((like: UserLike) => {
+      like.image.imageTags.forEach((imageTag: ImageTag) => {
         likedTagIds.add(imageTag.tagId);
       });
     });
@@ -90,7 +110,7 @@ export async function GET(request: NextRequest) {
       const additionalImages = await prisma.image.findMany({
         where: {
           userId: { not: userId },
-          id: { notIn: shuffled.map((img: any) => img.id) }
+          id: { notIn: shuffled.map((img) => img.id) }
         },
         orderBy: [
           { likeCount: 'desc' },
