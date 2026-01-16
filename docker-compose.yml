@@ -11,6 +11,6 @@ services:
       - '4144:4144'
     restart: unless-stopped
     volumes:
-      - /mnt/main/link/Services/Imagen:/app/public/uploads
+      - /mnt/main/link/Services/Imagen:/app/public/uploads:rw
 volumes:
   pixelvault_uploads: null
