@@ -2,14 +2,10 @@ version: '3.8'
 
 services:
   web:
-    # Use pre-built image from GitHub Container Registry
-    # Replace 'alexzades/alexzades' with your actual GitHub repo path
-    image: ghcr.io/alexzades/alexzades:latest
-    
-    # Uncomment to build locally instead
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile
+    # Build locally instead of pulling from GHCR
+    build:
+      context: .
+      dockerfile: Dockerfile
     
     container_name: pixelvault-web
     
@@ -28,7 +24,6 @@ services:
     
     restart: unless-stopped
     
-    # Health check to ensure the app is running
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4144"]
       interval: 30s
