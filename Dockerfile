@@ -1,42 +1,77 @@
-# Stage 1: Build the Next.js application
-FROM node:20-alpine AS builder
-
+# Stage 1: Dependencies
+FROM node:18-alpine AS deps
+RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
-# Copy package.json and package-lock.json (or yarn.lock) to leverage Docker cache
-COPY package.json yarn.lock* ./
-RUN yarn install --frozen-lockfile
+# Copy package files
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
 
-# Copy the rest of the application code
+# Install dependencies
+RUN \
+  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
+  elif [ -f package-lock.json ]; then npm ci; \
+  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
+
+# Stage 2: Builder
+FROM node:18-alpine AS builder
+RUN apk add --no-cache libc6-compat openssl
+WORKDIR /app
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy application code
 COPY . .
 
-# Build the Next.js application
-# 'output' directory contains the optimized Next.js build
-RUN yarn build
+# CRITICAL: Ensure Prisma schema is present
+RUN ls -la prisma/ || echo "Warning: prisma directory not found"
+RUN test -f prisma/schema.prisma || (echo "ERROR: prisma/schema.prisma not found!" && exit 1)
 
-# Stage 2: Create the production-ready image
-FROM node:20-alpine
+# Generate Prisma Client
+RUN npx prisma generate
 
-# Set environment variables for Next.js production mode
-ENV NODE_ENV=production
-ENV PORT=3000
+# Build Next.js application
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN \
+  if [ -f yarn.lock ]; then yarn build; \
+  elif [ -f package-lock.json ]; then npm run build; \
+  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
 
+# Stage 3: Runner
+FROM node:18-alpine AS runner
+RUN apk add --no-cache openssl
 WORKDIR /app
 
-# Copy only necessary files from the builder stage
-# The .next directory contains the production build of Next.js
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy necessary files from builder
 COPY --from=builder /app/public ./public
-# If you have static assets in a separate 'static' folder, copy them too
-# COPY --from=builder /app/static ./static
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
-# No native dependencies for lowdb or @foreast/file-async, so no extra build tools or libs needed.
+# Copy Prisma files for runtime
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/prisma ./prisma
 
-# Expose the port Next.js will run on
+# Create uploads directory
+RUN mkdir -p /app/public/uploads/thumbnails
+RUN chown -R nextjs:nodejs /app/public/uploads
+
+USER nextjs
+
 EXPOSE 3000
 
-# Command to run the Next.js application in production mode
-CMD ["yarn", "start"]
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
+CMD ["node", "server.js"]

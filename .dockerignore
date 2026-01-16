@@ -1,0 +1,48 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Next.js
+.next
+out
+
+# Testing
+coverage
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+*.log
+
+# Env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Uploads (we want to exclude local uploads but keep the directory structure)
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Database backups
+backup_*.sql
+
+# IDE
+.vscode
+.idea
+
+# IMPORTANT: Do NOT ignore these - they're required for Docker builds
+# prisma/schema.prisma - MUST be included
+# prisma/migrations/ - MUST be included

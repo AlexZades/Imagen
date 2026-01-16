@@ -9,18 +9,24 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }} # This will be something like 'your-github-username/your-repo-name'
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write # Grant write permission to the GITHUB_TOKEN for pushing images to GHCR
+      packages: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Verify Prisma schema exists
+        run: |
+          echo "Checking for Prisma schema..."
+          ls -la prisma/
+          test -f prisma/schema.prisma && echo "✅ Prisma schema found" || (echo "❌ Prisma schema NOT found" && exit 1)
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -30,7 +36,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3 # NEW: Set up Buildx to enable cache backends
+        uses: docker/setup-buildx-action@v3
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
@@ -49,6 +55,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha # This will now work
-          cache-to: type=gha,mode=max # This will now work
-
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
