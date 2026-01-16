@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbo",
+    "dev:legacy": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "clean": "rm -rf .next node_modules/.cache",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "cross-env-shell prisma migrate deploy",
     "prisma:studio": "prisma studio",

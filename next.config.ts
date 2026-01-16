@@ -4,7 +4,23 @@ const nextConfig: NextConfig = {
   // Enable standalone output for Docker
   output: 'standalone',
   
-  webpack: (config) => {
+  // Fix chunk loading issues
+  webpack: (config, { dev, isServer }) => {
+    // Fix for chunk loading timeout issues in development
+    if (dev && !isServer) {
+      config.optimization = {
+        ...config.optimization,
+        runtimeChunk: 'single',
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: false,
+            vendors: false,
+          },
+        },
+      };
+    }
+
     if (process.env.NODE_ENV === "development") {
       config.module.rules.push({
         test: /\.(jsx|tsx)$/,
@@ -13,8 +29,10 @@ const nextConfig: NextConfig = {
         use: "@dyad-sh/nextjs-webpack-component-tagger",
       });
     }
+    
     return config;
   },
+  
   async rewrites() {
     const rewrites = [];
 
