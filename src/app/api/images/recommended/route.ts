@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
 
     // Extract unique tag IDs from liked images
     const likedTagIds = new Set<string>();
-    userLikes.forEach(like => {
-      like.image.imageTags.forEach(imageTag => {
+    userLikes.forEach((like: any) => {
+      like.image.imageTags.forEach((imageTag: any) => {
         likedTagIds.add(imageTag.tagId);
       });
     });
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
       const additionalImages = await prisma.image.findMany({
         where: {
           userId: { not: userId },
-          id: { notIn: shuffled.map(img => img.id) }
+          id: { notIn: shuffled.map((img: any) => img.id) }
         },
         orderBy: [
           { likeCount: 'desc' },
