@@ -1,48 +1,66 @@
 # Dependencies
 node_modules
-npm-debug.log
-yarn-error.log
-
-# Next.js
-.next
-out
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
 # Testing
 coverage
+.nyc_output
 
-# Misc
-.DS_Store
-*.pem
+# Next.js
+.next/
+out/
+build
+dist
+
+# Production
+.vercel
+.env*.local
+.env.production
 
 # Debug
 *.log
 
-# Env files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Git
-.git
-.gitignore
-
-# Documentation
-*.md
-!README.md
-
-# Uploads (we want to exclude local uploads but keep the directory structure)
-public/uploads/*
-!public/uploads/.gitkeep
-
-# Database backups
-backup_*.sql
+# OS
+.DS_Store
+*.pem
+Thumbs.db
 
 # IDE
 .vscode
 .idea
+*.swp
+*.swo
+*~
 
-# IMPORTANT: Do NOT ignore these - they're required for Docker builds
-# prisma/schema.prisma - MUST be included
-# prisma/migrations/ - MUST be included
+# Misc
+.git
+.gitignore
+README.md
+*.md
+.prettierrc
+.eslintrc.json
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Database
+*.db
+*.db-journal
+data/
+prisma/migrations/*_migration.sql
+
+# Uploads (will be mounted as volume)
+public/uploads/*
+
+# Scripts
+scripts/
+
+# Lock files (regenerate in container)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
