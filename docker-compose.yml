@@ -3,12 +3,13 @@ version: '3.8'
 services:
   web:
     # Option 1: Use pre-built image from GitHub Container Registry
-    # image: ghcr.io/your-github-username/your-repo-name:latest
+    # Replace 'your-github-username/your-repo-name' with your actual GitHub repo
+    image: ghcr.io/your-github-username/pixelvault:latest
     
-    # Option 2: Build locally from Dockerfile
-    build:
-      context: .
-      dockerfile: Dockerfile
+    # Option 2: Uncomment to build locally instead
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
     
     container_name: pixelvault-web
     ports:
