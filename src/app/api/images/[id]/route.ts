@@ -45,8 +45,8 @@ export async function GET(
     });
 
     // Extract tags and styles
-    const tags = image.imageTags.map(it => it.tag);
-    const styles = image.imageStyles.map(is => is.style);
+    const tags = image.imageTags.map((it: { tag: any }) => it.tag);
+    const styles = image.imageStyles.map((is: { style: any }) => is.style);
 
     return NextResponse.json({
       image: {
