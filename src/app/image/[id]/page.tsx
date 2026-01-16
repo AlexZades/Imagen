@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
@@ -30,7 +30,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Heart, ThumbsDown, Eye, User as UserIcon, Calendar, Maximize2, Palette, Edit, Trash2, Save, X } from 'lucide-react';
+import { Heart, ThumbsDown, Eye, User as UserIcon, Calendar, Maximize2, Palette, Edit, Trash2, Save } from 'lucide-react';
 
 interface Image {
   id: string;
@@ -85,18 +85,22 @@ export default function ImageDetailPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const imageId = params?.id as string | undefined;
+
   useEffect(() => {
-    if (params.id) {
+    if (imageId) {
       fetchImage();
       if (user) {
         fetchLikeStatus();
       }
     }
-  }, [params.id, user]);
+  }, [imageId, user]);
 
   const fetchImage = async () => {
+    if (!imageId) return;
+    
     try {
-      const response = await fetch(`/api/images/${params.id}`);
+      const response = await fetch(`/api/images/${imageId}`);
       if (!response.ok) {
         throw new Error('Image not found');
       }
@@ -114,10 +118,10 @@ export default function ImageDetailPage() {
   };
 
   const fetchLikeStatus = async () => {
-    if (!user) return;
+    if (!user || !imageId) return;
 
     try {
-      const response = await fetch(`/api/likes?userId=${user.id}&imageId=${params.id}`);
+      const response = await fetch(`/api/likes?userId=${user.id}&imageId=${imageId}`);
       const data = await response.json();
       setUserLikeStatus(data.hasLiked);
     } catch (error) {
@@ -132,13 +136,15 @@ export default function ImageDetailPage() {
       return;
     }
 
+    if (!imageId) return;
+
     try {
       const response = await fetch('/api/likes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: user.id,
-          imageId: params.id,
+          imageId: imageId,
           isLike,
         }),
       });
@@ -174,12 +180,12 @@ export default function ImageDetailPage() {
   };
 
   const handleSaveEdit = async () => {
-    if (!user || !image) return;
+    if (!user || !image || !imageId) return;
 
     setIsSaving(true);
 
     try {
-      const response = await fetch(`/api/images/${params.id}`, {
+      const response = await fetch(`/api/images/${imageId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -207,12 +213,12 @@ export default function ImageDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!user || !image) return;
+    if (!user || !image || !imageId) return;
 
     setIsDeleting(true);
 
     try {
-      const response = await fetch(`/api/images/${params.id}?userId=${user.id}`, {
+      const response = await fetch(`/api/images/${imageId}?userId=${user.id}`, {
         method: 'DELETE',
       });
 
