@@ -12,12 +12,14 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
+    "prisma:push": "prisma db push",
     "migrate:simple-tags": "prisma migrate deploy && prisma generate",
     "populate:simple-tags": "tsx scripts/populate-simple-tags.ts",
     "check:simple-tags": "tsx scripts/check-simple-tags.ts",
     "test:simple-tags": "tsx scripts/test-simple-tag-creation.ts",
     "check:database": "tsx scripts/fix-database-sync.ts",
     "fix:database": "npx prisma migrate deploy && npx prisma generate",
+    "sync:database": "tsx scripts/sync-database.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
