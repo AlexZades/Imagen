@@ -11,7 +11,7 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: "postgresql://admin:internal1234@192.168.0.17:5432/Imagen?schema=public"
-      # COMFYUI_API_URL: "http://your-comfyui-instance:8188"
+      COMFYUI_API_URL: "http://your-comfyui-instance:8188"
       # AUTO_GENERATION_SECRET: "your-secret-token-here"
     restart: unless-stopped
 
