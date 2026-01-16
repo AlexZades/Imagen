@@ -67,6 +67,8 @@ export default function ImageDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const imageId = params?.id as string | undefined;
+  
   const [image, setImage] = useState<Image | null>(null);
   const [tags, setTags] = useState<Tag[]>([]);
   const [styles, setStyles] = useState<Style[]>([]);
@@ -84,8 +86,6 @@ export default function ImageDetailPage() {
   // Delete state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  const imageId = params?.id as string | undefined;
 
   useEffect(() => {
     if (imageId) {
