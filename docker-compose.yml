@@ -4,7 +4,7 @@ services:
   web:
     # Option 1: Use pre-built image from GitHub Container Registry
     # Replace 'your-github-username/your-repo-name' with your actual GitHub repo
-    image: ghcr.io/AlexZades/pixelvault:latest
+    image: ghcr.io/AlexZades/AlexZades:latest
     
     # Option 2: Uncomment to build locally instead
     # build:
