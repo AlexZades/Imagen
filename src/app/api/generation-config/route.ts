@@ -8,6 +8,14 @@ const DEFAULT_FALLBACK_TAGS = [
   'detailed', 'high quality', 'masterpiece',
 ];
 
+interface GenerationConfig {
+  id: string;
+  key: string;
+  value: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -36,7 +44,7 @@ export async function GET(request: NextRequest) {
       const configs = await prisma.generationConfig.findMany();
       
       // Ensure fallback_tags exists
-      let fallbackTags = configs.find(c => c.key === 'fallback_tags');
+      let fallbackTags = configs.find((c: GenerationConfig) => c.key === 'fallback_tags');
       if (!fallbackTags) {
         fallbackTags = {
           id: 'default',
