@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
   try {
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create image with tags and styles in a transaction
-    const newImage = await prisma.$transaction(async (tx: any) => {
+    const newImage = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const image = await tx.image.create({
         data: {
           userId,
