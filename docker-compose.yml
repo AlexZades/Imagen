@@ -2,8 +2,8 @@ services:
   web:
     container_name: pixelvault-web
     environment:
-      COMFYUI_API_URL: 
-      DATABASE_URL: 
+      COMFYUI_API_URL: http://192.168.0.16:3000
+      DATABASE_URL: postgresql://admin:internal1234@192.168.0.17:5432/Imagen?schema=public
       NODE_ENV: production
     image: ghcr.io/alexzades/imagen:latest
     ports:
