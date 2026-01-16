@@ -5,12 +5,12 @@ services:
       COMFYUI_API_URL: apiurl
       DATABASE_URL: postgresql://admin:password@hostname:port/databaseName?schema=public
       NODE_ENV: production
-      PORT:4144
+      PORT: 4144
     image: ghcr.io/alexzades/imagen:latest
     ports:
       - '4144:4144'
     restart: unless-stopped
     volumes:
-      - pixelvault_uploads:/app/public/uploads
+      - /mnt/main/link/Services/Imagen:/app/public/uploads
 volumes:
-  pixelvault_uploads: Null
+  pixelvault_uploads: null
