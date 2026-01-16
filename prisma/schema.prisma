@@ -15,7 +15,6 @@ model User {
   avatarUrl    String?
   isAdmin      Boolean  @default(false)
   createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
 
   images Image[]
   likes  Like[]
@@ -49,15 +48,14 @@ model Image {
 }
 
 model Tag {
-  id              String   @id @default(cuid())
-  name            String   @unique
-  loras           String[] @default([])
-  minStrength     Float?
-  maxStrength     Float?
+  id               String   @id @default(cuid())
+  name             String   @unique
+  loras            String[] @default([])
+  minStrength      Float?
+  maxStrength      Float?
   forcedPromptTags String?
-  usageCount      Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  usageCount       Int      @default(0)
+  createdAt        DateTime @default(now())
 
   imageTags ImageTag[]
 }
@@ -69,7 +67,6 @@ model Style {
   checkpointName String?
   usageCount     Int      @default(0)
   createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
 
   imageStyles ImageStyle[]
 }
@@ -119,5 +116,4 @@ model GenerationConfig {
   key       String   @unique
   value     String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
