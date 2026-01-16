@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider        = "prisma-client-js"
+  provider = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
 }
 
@@ -12,7 +9,7 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
+  id           String   @id @default(uuid())
   username     String   @unique
   email        String   @unique
   passwordHash String
@@ -22,12 +19,10 @@ model User {
 
   images Image[]
   likes  Like[]
-
-  @@map("User")
 }
 
 model Image {
-  id                String   @id @default(cuid())
+  id                String   @id @default(uuid())
   userId            String
   title             String
   description       String?
@@ -35,7 +30,7 @@ model Image {
   imageUrl          String
   thumbnailUrl      String?
   filename          String
-  thumbnailFilename String?
+  thumbnailFilename String
   width             Int
   height            Int
   size              Int
@@ -51,11 +46,10 @@ model Image {
 
   @@index([userId])
   @@index([createdAt])
-  @@map("Image")
 }
 
 model Tag {
-  id               String   @id @default(cuid())
+  id               String   @id @default(uuid())
   name             String   @unique
   createdAt        DateTime @default(now())
   usageCount       Int      @default(0)
@@ -65,12 +59,10 @@ model Tag {
   forcedPromptTags String?
 
   imageTags ImageTag[]
-
-  @@map("Tag")
 }
 
 model Style {
-  id             String   @id @default(cuid())
+  id             String   @id @default(uuid())
   name           String   @unique
   createdAt      DateTime @default(now())
   usageCount     Int      @default(0)
@@ -78,12 +70,10 @@ model Style {
   checkpointName String?
 
   imageStyles ImageStyle[]
-
-  @@map("Style")
 }
 
 model Like {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   userId    String
   imageId   String
   isLike    Boolean
@@ -95,11 +85,10 @@ model Like {
   @@unique([userId, imageId])
   @@index([userId])
   @@index([imageId])
-  @@map("Like")
 }
 
 model ImageTag {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   imageId   String
   tagId     String
   createdAt DateTime @default(now())
@@ -110,11 +99,10 @@ model ImageTag {
   @@unique([imageId, tagId])
   @@index([imageId])
   @@index([tagId])
-  @@map("ImageTag")
 }
 
 model ImageStyle {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   imageId   String
   styleId   String
   createdAt DateTime @default(now())
@@ -125,5 +113,37 @@ model ImageStyle {
   @@unique([imageId, styleId])
   @@index([imageId])
   @@index([styleId])
-  @@map("ImageStyle")
+}
+
+model SimpleTag {
+  id         String   @id @default(uuid())
+  tag        String   @unique
+  usageCount Int      @default(0)
+  category   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([usageCount])
+  @@index([tag])
+}
+
+model ImageSimpleTag {
+  id        String   @id @default(uuid())
+  imageId   String
+  simpleTag String
+  createdAt DateTime @default(now())
+
+  image Image @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  @@unique([imageId, simpleTag])
+  @@index([imageId])
+  @@index([simpleTag])
+}
+
+model GenerationConfig {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

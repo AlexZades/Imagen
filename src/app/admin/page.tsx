@@ -31,6 +31,7 @@ import {
 import { TestGenerator } from '@/components/admin/test-generator';
 import { AutoGenerationTest } from '@/components/admin/auto-generation-test';
 import { SimpleTagsViewer } from '@/components/admin/simple-tags-viewer';
+import { FallbackTagsEditor } from '@/components/admin/fallback-tags-editor';
 import { toast } from 'sonner';
 import { Edit, Trash2, Plus, X, Save } from 'lucide-react';
 
@@ -382,6 +383,7 @@ export default function AdminPage() {
             <TabsTrigger value="tags">Tags</TabsTrigger>
             <TabsTrigger value="styles">Styles</TabsTrigger>
             <TabsTrigger value="simple-tags">Simple Tags</TabsTrigger>
+            <TabsTrigger value="fallback-tags">Fallback Tags</TabsTrigger>
           </TabsList>
 
           <TabsContent value="generator" className="mt-6">
@@ -394,6 +396,10 @@ export default function AdminPage() {
 
           <TabsContent value="simple-tags" className="mt-6">
             <SimpleTagsViewer />
+          </TabsContent>
+
+          <TabsContent value="fallback-tags" className="mt-6">
+            <FallbackTagsEditor />
           </TabsContent>
 
           <TabsContent value="tags" className="mt-6">

@@ -129,6 +129,82 @@ export const EXPLORATORY_PRESET: Partial<GenerationConfig> = {
   loraWeightVariation: 0.8,
 };
 
+// ==================== Simple Tags Utilities ====================
+
+const DEFAULT_FALLBACK_TAGS = [
+  'standing', 'sitting', 'smiling', 'looking at viewer',
+  'outdoors', 'indoors', 'day', 'night',
+  'solo', 'portrait', 'full body', 'upper body',
+  'detailed', 'high quality', 'masterpiece',
+];
+
+async function getFallbackTags(): Promise<string[]> {
+  try {
+    const config = await prisma.generationConfig.findUnique({
+      where: { key: 'fallback_tags' }
+    });
+
+    if (config && config.value) {
+      return config.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    }
+  } catch (error) {
+    console.error('Error fetching fallback tags:', error);
+  }
+
+  return DEFAULT_FALLBACK_TAGS;
+}
+
+async function getAvailableSimpleTags(): Promise<string[]> {
+  try {
+    // First, try to get tags from the database
+    const images = await prisma.image.findMany({
+      where: {
+        promptTags: {
+          not: null,
+        },
+      },
+      select: {
+        promptTags: true,
+      },
+    });
+
+    if (images.length > 0) {
+      // Parse and count all tags
+      const tagCounts = new Map<string, number>();
+      
+      images.forEach((image) => {
+        if (!image.promptTags) return;
+        
+        const tags = image.promptTags
+          .split(',')
+          .map((tag) => tag.trim().toLowerCase())
+          .filter((tag) => tag.length > 0);
+        
+        tags.forEach((tag) => {
+          tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+        });
+      });
+
+      // Get tags sorted by usage
+      const sortedTags = Array.from(tagCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([tag]) => tag);
+
+      if (sortedTags.length > 0) {
+        console.log(`Using ${sortedTags.length} simple tags from database`);
+        return sortedTags;
+      }
+    }
+
+    // Fallback to configured tags
+    console.log('No database tags found, using fallback tags');
+    return await getFallbackTags();
+  } catch (error) {
+    console.error('Error getting available simple tags:', error);
+    return await getFallbackTags();
+  }
+}
+
 // ==================== User Preference Profile Builder ====================
 
 export async function buildUserPreferenceProfile(userId: string): Promise<UserPreferenceProfile | null> {
@@ -428,14 +504,11 @@ async function generateRandomImage(
   const selectedTags = randomChoices(allTags, numTags);
   const selectedStyle = randomChoice(allStyles);
 
-  const commonSimpleTags = [
-    'standing', 'sitting', 'smiling', 'looking at viewer',
-    'outdoors', 'indoors', 'day', 'night',
-    'solo', 'portrait', 'full body', 'upper body',
-    'detailed', 'high quality', 'masterpiece',
-  ];
+  // Get available simple tags (database first, fallback second)
+  const availableSimpleTags = await getAvailableSimpleTags();
+  
   const numSimpleTags = randomInt(config.randomMinTags, config.randomMaxTags);
-  const selectedSimpleTags = randomChoices(commonSimpleTags, numSimpleTags);
+  const selectedSimpleTags = randomChoices(availableSimpleTags, numSimpleTags);
 
   const loraWeights = calculateLoraWeights(selectedTags, config, 1.0);
 
