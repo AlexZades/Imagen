@@ -2,7 +2,7 @@
 
 A self-hosted image hosting and browsing platform with AI-powered image generation using ComfyUI.
 
-## ✨ Features
+## Features
 
 - **Image Hosting**: Upload and share images with automatic thumbnail generation
 - **AI Generation**: Generate images using ComfyUI with LoRA support
@@ -14,7 +14,7 @@ A self-hosted image hosting and browsing platform with AI-powered image generati
 - **Admin Panel**: Manage tags, styles, and test generation features
 - **Responsive Design**: Works on desktop and mobile devices
 
-## 🚀 Tech Stack
+## Tech Stack
 
 - **Framework**: Next.js 15 (App Router)
 - **Database**: PostgreSQL with Prisma ORM
@@ -24,14 +24,14 @@ A self-hosted image hosting and browsing platform with AI-powered image generati
 - **AI Integration**: ComfyUI API for image generation
 - **Containerization**: Docker & Docker Compose
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Node.js 18+ and npm
 - PostgreSQL database
 - Docker & Docker Compose (optional, for containerized deployment)
 - ComfyUI instance with API enabled (for generation features)
 
-## 🛠️ Setup
+## Setup
 
 ### 1. Clone and Install
 
@@ -77,7 +77,7 @@ npm run dev
 
 Visit `http://localhost:3000`
 
-## 🐳 Docker Deployment
+## Docker Deployment
 
 ### Using Docker Compose
 
@@ -92,7 +92,7 @@ docker compose logs -f
 docker compose down
 ```
 
-The application will be available at `http://localhost:3000`
+The application will be available at `http://localhost:4144`
 
 ### Environment Variables for Docker
 
@@ -103,9 +103,10 @@ environment:
   DATABASE_URL: "postgresql://admin:password@postgres:5432/imagen?schema=public"
   COMFYUI_API_URL: "http://your-comfyui:8188"
   AUTO_GENERATION_SECRET: "your-secret-token"
+  PORT: 4144
 ```
 
-## 📊 Database Schema
+## Database Schema
 
 ### Core Tables
 - **User**: User accounts and authentication
@@ -118,9 +119,9 @@ environment:
 - **SimpleTag**: Unique tags with automatic usage counting
 - **ImageSimpleTag**: Junction table linking images to simple tags
 
-Simple tags are automatically tracked using PostgreSQL triggers - no application code needed!
+Simple tags are automatically tracked using PostgreSQL triggers - no application code needed.
 
-## 🎨 Features Guide
+## Features Guide
 
 ### Image Upload
 
@@ -128,22 +129,22 @@ Simple tags are automatically tracked using PostgreSQL triggers - no application
 2. Drag & drop or select an image
 3. Add title, description, and tags
 4. Select a style
-5. Upload!
+5. Upload
 
 ### AI Generation (Admin)
 
 1. Go to Admin Panel → Test Generator
 2. Select tags (LoRAs) and style (model)
 3. Enter prompt tags
-4. Generate!
+4. Generate
 
 ### Auto-Generation
 
 Automatically generates images for all users based on their preferences:
 
 1. **Random Generation**: Uses random tags and styles
-2. **Close Recommendations**: (Phase 2) Based on liked images
-3. **Mixed Recommendations**: (Phase 2) Combines preferences
+2. **Close Recommendations**: Based on liked images
+3. **Mixed Recommendations**: Combines preferences
 
 Trigger via API:
 ```bash
@@ -159,7 +160,7 @@ View tag usage statistics in Admin Panel → Simple Tags:
 - Usage trends
 - Export to CSV
 
-## 🔧 Admin Features
+## Admin Features
 
 ### Tag Management
 - Create tags with LoRA configurations
@@ -182,7 +183,7 @@ View tag usage statistics in Admin Panel → Simple Tags:
 - View detailed generation reports
 - Monitor success/failure rates
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 src/
@@ -219,7 +220,7 @@ scripts/
 └── populate-simple-tags.ts   # Populate existing data
 ```
 
-## 🔐 Security Notes
+## Security Notes
 
 - Passwords are hashed using SHA-256
 - First registered user becomes admin automatically
@@ -227,7 +228,7 @@ scripts/
 - File uploads are validated and sanitized
 - SQL injection protected by Prisma
 
-## 🚀 Production Deployment
+## Production Deployment
 
 ### Build for Production
 
@@ -245,13 +246,13 @@ docker run -p 3000:3000 --env-file .env pixelvault
 
 ### Environment Variables Checklist
 
-- [ ] DATABASE_URL configured
-- [ ] COMFYUI_API_URL configured (if using generation)
-- [ ] AUTO_GENERATION_SECRET set (if using auto-generation)
-- [ ] File upload directory writable
-- [ ] Database migrations applied
+- DATABASE_URL configured
+- COMFYUI_API_URL configured (if using generation)
+- AUTO_GENERATION_SECRET set (if using auto-generation)
+- File upload directory writable
+- Database migrations applied
 
-## 📝 API Documentation
+## API Documentation
 
 ### Auto-Generation Endpoint
 
@@ -287,7 +288,7 @@ Response:
 }
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Database Connection Issues
 
@@ -315,13 +316,13 @@ npm run populate:simple-tags
 - Check COMFYUI_API_URL is correct
 - Verify API is enabled in ComfyUI settings
 
-## 📚 Documentation
+## Documentation
 
 - [Migration Guide](MIGRATION_GUIDE.md) - Database migration instructions
 - [Simple Tags Summary](SIMPLE_TAGS_SUMMARY.md) - Technical overview
 - [Quick Start](QUICK_START_SIMPLE_TAGS.md) - Quick reference guide
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -329,24 +330,20 @@ npm run populate:simple-tags
 4. Test thoroughly
 5. Submit a pull request
 
-## 📄 License
+## License
 
 MIT License - see LICENSE file for details
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Built with [Next.js](https://nextjs.org/)
 - UI components from [Shadcn/UI](https://ui.shadcn.com/)
 - Image generation powered by [ComfyUI](https://github.com/comfyanonymous/ComfyUI)
 - Database ORM by [Prisma](https://www.prisma.io/)
 
-## 📞 Support
+## Support
 
 For issues and questions:
 - Check the troubleshooting section
 - Review the documentation files
 - Open an issue on GitHub
-
----
-
-Made with ❤️ for the AI art community
