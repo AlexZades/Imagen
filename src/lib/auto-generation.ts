@@ -160,9 +160,9 @@ export async function buildUserPreferenceProfile(userId: string): Promise<UserPr
       return null;
     }
 
-    const likedImages = likes.map((like) => ({
+    const likedImages = likes.map((like: any) => ({
       imageId: like.image.id,
-      tags: like.image.imageTags.map((it) => ({
+      tags: like.image.imageTags.map((it: any) => ({
         id: it.tag.id,
         name: it.tag.name,
         loras: it.tag.loras,
@@ -177,7 +177,7 @@ export async function buildUserPreferenceProfile(userId: string): Promise<UserPr
           }
         : null,
       simpleTags: like.image.promptTags
-        ? like.image.promptTags.split(',').map((t) => t.trim()).filter((t) => t.length > 0)
+        ? like.image.promptTags.split(',').map((t: string) => t.trim()).filter((t: string) => t.length > 0)
         : [],
     }));
 
@@ -185,8 +185,8 @@ export async function buildUserPreferenceProfile(userId: string): Promise<UserPr
     const styleFrequency = new Map<string, number>();
     const simpleTagFrequency = new Map<string, number>();
 
-    likedImages.forEach((img) => {
-      img.tags.forEach((tag) => {
+    likedImages.forEach((img: any) => {
+      img.tags.forEach((tag: any) => {
         tagFrequency.set(tag.id, (tagFrequency.get(tag.id) || 0) + 1);
       });
 
@@ -194,7 +194,7 @@ export async function buildUserPreferenceProfile(userId: string): Promise<UserPr
         styleFrequency.set(img.style.id, (styleFrequency.get(img.style.id) || 0) + 1);
       }
 
-      img.simpleTags.forEach((tag) => {
+      img.simpleTags.forEach((tag: string) => {
         const normalized = tag.toLowerCase();
         simpleTagFrequency.set(normalized, (simpleTagFrequency.get(normalized) || 0) + 1);
       });
@@ -203,8 +203,8 @@ export async function buildUserPreferenceProfile(userId: string): Promise<UserPr
     const topTags = Array.from(tagFrequency.entries())
       .map(([tagId, count]) => {
         const tag = likedImages
-          .flatMap((img) => img.tags)
-          .find((t) => t.id === tagId);
+          .flatMap((img: any) => img.tags)
+          .find((t: any) => t.id === tagId);
         return { id: tagId, name: tag?.name || '', count };
       })
       .sort((a, b) => b.count - a.count)
@@ -213,8 +213,8 @@ export async function buildUserPreferenceProfile(userId: string): Promise<UserPr
     const topStyles = Array.from(styleFrequency.entries())
       .map(([styleId, count]) => {
         const style = likedImages
-          .map((img) => img.style)
-          .find((s) => s?.id === styleId);
+          .map((img: any) => img.style)
+          .find((s: any) => s?.id === styleId);
         return { id: styleId, name: style?.name || '', count };
       })
       .sort((a, b) => b.count - a.count)
@@ -285,7 +285,7 @@ function calculateLoraWeights(
   config: GenerationConfig,
   variationMultiplier: number
 ): number[] {
-  return tags.map((tag) => {
+  return tags.map((tag: any) => {
     const minStrength = tag.minStrength ?? 1;
     const maxStrength = tag.maxStrength ?? 1;
     const baseWeight = randomFloat(minStrength, maxStrength);
@@ -312,8 +312,8 @@ async function generateCloseRecommendation(
   
   if (rollDice(config.closeAddProbability) && profile.topSimpleTags.length > 0) {
     const newTag = weightedRandomChoice(
-      profile.topSimpleTags.map(t => t.tag),
-      profile.topSimpleTags.map(t => t.count)
+      profile.topSimpleTags.map((t: any) => t.tag),
+      profile.topSimpleTags.map((t: any) => t.count)
     );
     if (!selectedSimpleTags.includes(newTag)) {
       selectedSimpleTags.push(newTag);
@@ -324,8 +324,8 @@ async function generateCloseRecommendation(
     if (rollDice(config.closeSwapProbability) && selectedSimpleTags.length > 0 && profile.topSimpleTags.length > 0) {
       const indexToReplace = randomInt(0, selectedSimpleTags.length - 1);
       const newTag = weightedRandomChoice(
-        profile.topSimpleTags.map(t => t.tag),
-        profile.topSimpleTags.map(t => t.count)
+        profile.topSimpleTags.map((t: any) => t.tag),
+        profile.topSimpleTags.map((t: any) => t.count)
       );
       selectedSimpleTags[indexToReplace] = newTag;
     }
@@ -337,17 +337,17 @@ async function generateCloseRecommendation(
   if (rollDice(config.styleVariationProbability) && profile.topStyles.length > 0) {
     const styleChoice = weightedRandomChoice(
       profile.topStyles,
-      profile.topStyles.map(s => s.count)
+      profile.topStyles.map((s: any) => s.count)
     );
-    selectedStyle = allStyles.find(s => s.id === styleChoice.id) || selectedStyle;
+    selectedStyle = allStyles.find((s: any) => s.id === styleChoice.id) || selectedStyle;
   }
   
   if (!selectedStyle && profile.topStyles.length > 0) {
     const styleChoice = weightedRandomChoice(
       profile.topStyles,
-      profile.topStyles.map(s => s.count)
+      profile.topStyles.map((s: any) => s.count)
     );
-    selectedStyle = allStyles.find(s => s.id === styleChoice.id);
+    selectedStyle = allStyles.find((s: any) => s.id === styleChoice.id);
   }
   
   if (!selectedStyle) {
@@ -373,10 +373,10 @@ async function generateMixedRecommendation(
   const poolSize = Math.min(config.mixedPoolSize, profile.likedImages.length);
   const sourceImages = randomChoices(profile.likedImages, poolSize);
   
-  const pooledTags = sourceImages.flatMap(img => img.tags);
-  const pooledSimpleTags = sourceImages.flatMap(img => img.simpleTags);
+  const pooledTags = sourceImages.flatMap((img: any) => img.tags);
+  const pooledSimpleTags = sourceImages.flatMap((img: any) => img.simpleTags);
   
-  const uniqueTags = Array.from(new Map(pooledTags.map(t => [t.id, t])).values());
+  const uniqueTags = Array.from(new Map(pooledTags.map((t: any) => [t.id, t])).values());
   const uniqueSimpleTags = Array.from(new Set(pooledSimpleTags));
   
   let selectedTags: any[];
@@ -394,11 +394,11 @@ async function generateMixedRecommendation(
   if (rollDice(config.styleVariationProbability) && profile.topStyles.length > 0) {
     const styleChoice = weightedRandomChoice(
       profile.topStyles,
-      profile.topStyles.map(s => s.count)
+      profile.topStyles.map((s: any) => s.count)
     );
-    selectedStyle = allStyles.find(s => s.id === styleChoice.id);
+    selectedStyle = allStyles.find((s: any) => s.id === styleChoice.id);
   } else if (profile.topStyles.length > 0) {
-    selectedStyle = allStyles.find(s => s.id === profile.topStyles[0].id);
+    selectedStyle = allStyles.find((s: any) => s.id === profile.topStyles[0].id);
   }
   
   if (!selectedStyle) {
@@ -467,7 +467,7 @@ async function callComfyUIAPI(
 
   if (loraNames.length > 0) {
     requestBody.lora_name = loraNames.join(',');
-    requestBody.lora_weight = loraWeights.map((w) => String(w)).join(',');
+    requestBody.lora_weight = loraWeights.map((w: number) => String(w)).join(',');
   }
 
   const response = await fetch(`${comfyuiUrl}/generate`, {
@@ -524,7 +524,7 @@ async function saveGeneratedImage(
 
     if (tagIds.length > 0) {
       await tx.imageTag.createMany({
-        data: tagIds.map((tagId) => ({
+        data: tagIds.map((tagId: string) => ({
           imageId: img.id,
           tagId,
         })),
@@ -594,13 +594,13 @@ export async function generateImagesForUser(
           );
 
           const loraNames: string[] = [];
-          tags.forEach((tag) => {
+          tags.forEach((tag: any) => {
             if (tag.loras && Array.isArray(tag.loras)) {
               loraNames.push(...tag.loras.slice(0, 4 - loraNames.length));
             }
           });
 
-          const tagNames = tags.map((t) => t.name).join(', ');
+          const tagNames = tags.map((t: any) => t.name).join(', ');
           const simpleTagsStr = simpleTags.join(', ');
           const fullPrompt = tagNames ? `${tagNames}, ${simpleTagsStr}` : simpleTagsStr;
 
@@ -616,7 +616,7 @@ export async function generateImagesForUser(
             base64Image,
             `Close Recommendation ${i + 1}`,
             simpleTagsStr,
-            tags.map((t) => t.id),
+            tags.map((t: any) => t.id),
             style.id,
             'close'
           );
@@ -627,7 +627,7 @@ export async function generateImagesForUser(
             generationType: 'close',
             userId,
             prompt: fullPrompt,
-            tags: tags.map((t) => t.name),
+            tags: tags.map((t: any) => t.name),
             style: style.name,
           });
         } catch (error: any) {
@@ -656,13 +656,13 @@ export async function generateImagesForUser(
           );
 
           const loraNames: string[] = [];
-          tags.forEach((tag) => {
+          tags.forEach((tag: any) => {
             if (tag.loras && Array.isArray(tag.loras)) {
               loraNames.push(...tag.loras.slice(0, 4 - loraNames.length));
             }
           });
 
-          const tagNames = tags.map((t) => t.name).join(', ');
+          const tagNames = tags.map((t: any) => t.name).join(', ');
           const simpleTagsStr = simpleTags.join(', ');
           const fullPrompt = tagNames ? `${tagNames}, ${simpleTagsStr}` : simpleTagsStr;
 
@@ -678,7 +678,7 @@ export async function generateImagesForUser(
             base64Image,
             `Mixed Recommendation ${i + 1}`,
             simpleTagsStr,
-            tags.map((t) => t.id),
+            tags.map((t: any) => t.id),
             style.id,
             'mixed'
           );
@@ -689,7 +689,7 @@ export async function generateImagesForUser(
             generationType: 'mixed',
             userId,
             prompt: fullPrompt,
-            tags: tags.map((t) => t.name),
+            tags: tags.map((t: any) => t.name),
             style: style.name,
           });
         } catch (error: any) {
@@ -716,13 +716,13 @@ export async function generateImagesForUser(
         );
 
         const loraNames: string[] = [];
-        tags.forEach((tag) => {
+        tags.forEach((tag: any) => {
           if (tag.loras && Array.isArray(tag.loras)) {
             loraNames.push(...tag.loras.slice(0, 4 - loraNames.length));
           }
         });
 
-        const tagNames = tags.map((t) => t.name).join(', ');
+        const tagNames = tags.map((t: any) => t.name).join(', ');
         const simpleTagsStr = simpleTags.join(', ');
         const fullPrompt = tagNames ? `${tagNames}, ${simpleTagsStr}` : simpleTagsStr;
 
@@ -738,7 +738,7 @@ export async function generateImagesForUser(
           base64Image,
           `Random Generation ${i + 1}`,
           simpleTagsStr,
-          tags.map((t) => t.id),
+          tags.map((t: any) => t.id),
           style.id,
           'random'
         );
@@ -749,7 +749,7 @@ export async function generateImagesForUser(
           generationType: 'random',
           userId,
           prompt: fullPrompt,
-          tags: tags.map((t) => t.name),
+          tags: tags.map((t: any) => t.name),
           style: style.name,
         });
       } catch (error: any) {
@@ -807,8 +807,8 @@ export async function generateImagesForAllUsers(
     }
 
     const endTime = new Date();
-    const successCount = results.filter((r) => r.success).length;
-    const failureCount = results.filter((r) => !r.success).length;
+    const successCount = results.filter((r: GenerationResult) => r.success).length;
+    const failureCount = results.filter((r: GenerationResult) => !r.success).length;
 
     return {
       totalUsers: users.length,
