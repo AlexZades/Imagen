@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create image with tags and styles in a transaction
-    const newImage = await prisma.$transaction(async (tx) => {
+    const newImage = await prisma.$transaction(async (tx: any) => {
       const image = await tx.image.create({
         data: {
           userId,
