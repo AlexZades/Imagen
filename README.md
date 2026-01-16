@@ -1,13 +1,17 @@
-# PixelVault - Image Hosting Platform
+# Imagen:PixelVault - Image Hosting Platform
 
-A self-hosted image hosting and browsing platform with AI-powered image generation using ComfyUI.
+A self-hosted image hosting and browsing platform with AI-powered image generation using ComfyUI. I made this for myself using dyad but if it sounds like something you want to run feel free to try it.
+
+Users can't directly generate images using this service, instead the service generates images based on the tags and parameters of uploaded and liked images. In other words, new images are generated based on user behvaior preferences. 
+## Requirments
+You need a computer capable of running SDXL models comfortably or you will frequently run into OOM errors. (1ggb of vram or more)
+I've only tested this on NVIDIA gpus so I'm not sure if it will run on other hardware.
 
 ## Features
 
-- **Image Hosting**: Upload and share images with automatic thumbnail generation
-- **AI Generation**: Generate images using ComfyUI with LoRA support
+- **Image Hosting**: Upload and share images 
+- **Image Generation**: AI Generated images using ComfyUI with LoRA support 
 - **Auto-Generation**: Automated image generation for all users based on preferences
-- **Smart Tagging**: Automatic simple tags tracking with PostgreSQL triggers
 - **User System**: Registration, login, and user profiles
 - **Like/Dislike**: Engage with images through likes and dislikes
 - **Search & Filter**: Find images by tags, styles, and simple tags
@@ -19,9 +23,9 @@ A self-hosted image hosting and browsing platform with AI-powered image generati
 - **Framework**: Next.js 15 (App Router)
 - **Database**: PostgreSQL with Prisma ORM
 - **Styling**: Tailwind CSS + Shadcn/UI
-- **Image Processing**: Sharp
+- **Thumbnails**: Sharp
 - **Authentication**: Custom JWT-less auth with localStorage
-- **AI Integration**: ComfyUI API for image generation
+- **Image Generation**: ComfyUI API for image generation
 - **Containerization**: Docker & Docker Compose
 
 ## Prerequisites
@@ -29,15 +33,14 @@ A self-hosted image hosting and browsing platform with AI-powered image generati
 - Node.js 18+ and npm
 - PostgreSQL database
 - Docker & Docker Compose (optional, for containerized deployment)
-- ComfyUI instance with API enabled (for generation features)
+- ComfyUI instance with the BentoML Confy-Pack plugin for API support (the default ComfyUI is not compatible)
 
 ## Setup
 
 ### 1. Clone and Install
 
 ```bash
-git clone <your-repo-url>
-cd ImagenPlatform
+git clone https://github.com/AlexZades/Imagen.git
 npm install
 ```
 
@@ -48,15 +51,17 @@ Copy `.env.example` to `.env` and configure:
 ```env
 # Database
 DATABASE_URL="postgresql://user:password@localhost:5432/imagen?schema=public"
+# Port (for webservice)
+PORT=4414
 
 # ComfyUI API (for generation features)
-COMFYUI_API_URL="http://your-comfyui-instance:8188"
+COMFYUI_API_URL="http://your-comfyui-instance:port"
 
 # Auto-generation secret (for scheduled generation)
 AUTO_GENERATION_SECRET="your-secret-token-here"
 ```
 
-### 3. Database Setup
+### 3. Database Setup (rewrite this)
 
 ```bash
 # Run migrations
@@ -75,7 +80,7 @@ npm run populate:simple-tags
 npm run dev
 ```
 
-Visit `http://localhost:3000`
+Visit `http://localhost:4414` 
 
 ## Docker Deployment
 
@@ -103,7 +108,7 @@ environment:
   DATABASE_URL: "postgresql://admin:password@postgres:5432/imagen?schema=public"
   COMFYUI_API_URL: "http://your-comfyui:8188"
   AUTO_GENERATION_SECRET: "your-secret-token"
-  PORT: 4144
+  PORT: 4414
 ```
 
 ## Database Schema
@@ -123,7 +128,9 @@ Simple tags are automatically tracked using PostgreSQL triggers - no application
 
 ## Features Guide
 
-### Image Upload
+### Image Upload 
+
+Use this initialy seed your sever with tags and images.
 
 1. Click "Upload" in the navbar
 2. Drag & drop or select an image
@@ -133,13 +140,16 @@ Simple tags are automatically tracked using PostgreSQL triggers - no application
 
 ### AI Generation (Admin)
 
+Admins can generate images through the web interface.
+
 1. Go to Admin Panel → Test Generator
 2. Select tags (LoRAs) and style (model)
 3. Enter prompt tags
 4. Generate
 
-### Auto-Generation
+### Auto-Generation (run as a chron job on your server)
 
+This is kinda the main thing. 
 Automatically generates images for all users based on their preferences:
 
 1. **Random Generation**: Uses random tags and styles
@@ -148,79 +158,35 @@ Automatically generates images for all users based on their preferences:
 
 Trigger via API:
 ```bash
-curl -X POST http://localhost:3000/api/auto-generate \
+curl -X POST http://localhost:4414/api/auto-generate \
   -H "Authorization: Bearer YOUR_SECRET_TOKEN"
 ```
+## Setup Generation as Admin
 
-### Simple Tags Analytics
+You will need to download the models and loras you want to use. Once downloaded you can link the file names to tags/styles using the admin panel.
 
-View tag usage statistics in Admin Panel → Simple Tags:
-- Most used tags
-- Tag categories
-- Usage trends
-- Export to CSV
-
-## Admin Features
-
-### Tag Management
+### Tag Management (loras)
 - Create tags with LoRA configurations
 - Set min/max strength ranges
-- Add forced prompt tags
+- Add forced prompt tags (these will always be included the prompt for generation)
 - Configure up to 4 LoRAs per tag
 
-### Style Management
+### Style Management (models)
 - Create styles with checkpoint names
-- Add descriptions
-- Track usage statistics
+- Add descriptions if tou want
 
 ### Test Generator
-- Test ComfyUI integration
-- Preview generated images
-- Save to database
+This is a quick way to test if your endpoints are setup. You can use it to test generate images.
 
 ### Auto-Generation Test
 - Test generation for current user
 - View detailed generation reports
 - Monitor success/failure rates
 
-## Project Structure
-
-```
-src/
-├── app/                    # Next.js app router pages
-│   ├── api/               # API routes
-│   ├── admin/             # Admin panel
-│   ├── image/[id]/        # Image detail page
-│   ├── login/             # Login page
-│   ├── register/          # Registration page
-│   ├── search/            # Search page
-│   ├── upload/            # Upload page
-│   └── user/[id]/         # User profile page
-├── components/            # React components
-│   ├── ui/               # Shadcn/UI components
-│   ├── admin/            # Admin-specific components
-│   └── navbar.tsx        # Navigation bar
-├── contexts/             # React contexts
-│   └── auth-context.tsx  # Authentication context
-├── hooks/                # Custom React hooks
-├── lib/                  # Utility libraries
-│   ├── prisma.ts        # Prisma client
-│   ├── auth.ts          # Authentication utilities
-│   ├── upload.ts        # Image upload utilities
-│   └── auto-generation.ts # Auto-generation logic
-└── styles/              # Global styles
-
-prisma/
-├── schema.prisma        # Database schema
-└── migrations/          # Database migrations
-
-scripts/
-├── migrate-simple-tags.sh    # Migration script
-├── verify-simple-tags.sh     # Verification script
-└── populate-simple-tags.ts   # Populate existing data
-```
 
 ## Security Notes
+
+This project is a mess so dont deploy it as a production service (just dont)
 
 - Passwords are hashed using SHA-256
 - First registered user becomes admin automatically
@@ -241,7 +207,7 @@ npm start
 
 ```bash
 docker build -t pixelvault .
-docker run -p 3000:3000 --env-file .env pixelvault
+docker run -p 4414:4414 --env-file .env pixelvault
 ```
 
 ### Environment Variables Checklist
@@ -252,98 +218,25 @@ docker run -p 3000:3000 --env-file .env pixelvault
 - File upload directory writable
 - Database migrations applied
 
-## API Documentation
-
-### Auto-Generation Endpoint
-
-**POST** `/api/auto-generate`
-
-Headers:
-```
-Authorization: Bearer YOUR_SECRET_TOKEN
-```
-
-Body (optional):
-```json
-{
-  "config": {
-    "imagesPerUser": 6,
-    "randomCount": 2,
-    "closeRecommendationsCount": 2,
-    "mixedRecommendationsCount": 2
-  }
-}
-```
-
-Response:
-```json
-{
-  "success": true,
-  "report": {
-    "totalUsers": 10,
-    "successCount": 58,
-    "failureCount": 2,
-    "durationMs": 45000
-  }
-}
-```
 
 ## Troubleshooting
-
-### Database Connection Issues
-
-```bash
-# Test connection
-psql $DATABASE_URL -c "SELECT version();"
-
-# Check migrations
-npx prisma migrate status
-```
-
-### Simple Tags Not Tracking
-
-```bash
-# Verify triggers exist
-./scripts/verify-simple-tags.sh
-
-# Recalculate counts
-npm run populate:simple-tags
-```
 
 ### ComfyUI Connection Issues
 
 - Ensure ComfyUI is running and accessible
 - Check COMFYUI_API_URL is correct
 - Verify API is enabled in ComfyUI settings
-
-## Documentation
-
-- [Migration Guide](MIGRATION_GUIDE.md) - Database migration instructions
-- [Simple Tags Summary](SIMPLE_TAGS_SUMMARY.md) - Technical overview
-- [Quick Start](QUICK_START_SIMPLE_TAGS.md) - Quick reference guide
-
+  
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+1. Do it at your own risk, I am a trainwreck of a developer so I could use the help.
 
 ## License
 
 MIT License - see LICENSE file for details
 
-## Acknowledgments
-
-- Built with [Next.js](https://nextjs.org/)
-- UI components from [Shadcn/UI](https://ui.shadcn.com/)
-- Image generation powered by [ComfyUI](https://github.com/comfyanonymous/ComfyUI)
-- Database ORM by [Prisma](https://www.prisma.io/)
 
 ## Support
 
 For issues and questions:
-- Check the troubleshooting section
-- Review the documentation files
-- Open an issue on GitHub
+- Open an issue on GitHub (please include logs)
