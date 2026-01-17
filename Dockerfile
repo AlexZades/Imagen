@@ -20,8 +20,8 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy all source files INCLUDING prisma directory
 COPY . .
 
-# Generate Prisma Client using the installed version (not npx which downloads latest)
-RUN ./node_modules/.bin/prisma generate
+# Generate Prisma Client using node to run the prisma CLI
+RUN node node_modules/prisma/build/index.js generate
 
 # Build Next.js application
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -59,5 +59,5 @@ EXPOSE 4144
 ENV PORT=4144
 ENV HOSTNAME="0.0.0.0"
 
-# Run migrations using the installed prisma version and start the app
-CMD ./node_modules/.bin/prisma migrate deploy && node server.js
+# Run migrations using node to execute prisma CLI and start the app
+CMD node node_modules/prisma/build/index.js migrate deploy && node server.js
