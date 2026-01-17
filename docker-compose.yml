@@ -15,7 +15,7 @@ services:
     volumes:
       # Mount external directory for uploads
       # Change /path/to/your/uploads to your actual directory path
-      - /path/to/your/u:/app/public/uploads
+      - C:/Users/az/OneDrive/Desktop/Test:/app/public/uploads
       # Alternative: Use a named volume (uncomment if you prefer)
       # - pixelvault_uploads:/app/public/uploads
     
