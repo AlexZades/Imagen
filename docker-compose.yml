@@ -13,7 +13,7 @@ services:
       - "4144:4144"
     
     volumes:
-      - /mnt/main/link/Services/Imagen:/app/public/uploads
+      - X:/Services/Imagen/Imagen:/app/public/uploads
 
     environment:
       - NODE_ENV=production
