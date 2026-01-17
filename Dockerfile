@@ -3,8 +3,9 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package files
+# Copy package files AND prisma schema (needed for postinstall script)
 COPY package.json ./
+COPY prisma ./prisma
 
 # Use npm install instead of npm ci since there's no package-lock.json
 RUN npm install --legacy-peer-deps
@@ -19,7 +20,7 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy all source files INCLUDING prisma directory
 COPY . .
 
-# Generate Prisma Client BEFORE building Next.js
+# Generate Prisma Client (may already be done by postinstall, but ensure it's fresh)
 RUN npx prisma generate
 
 # Build Next.js application
