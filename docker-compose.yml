@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   web:
-    image: ghcr.io/alexzades/alexzades:latest
+    image: ghcr.io/alexzades/imagen:latest
     
     container_name: pixelvault-web
     
@@ -10,7 +10,7 @@ services:
       - "4144:4144"
     
     volumes:
-      - C:/Users/az/OneDrive/Desktop/Test:/app/public/uploads
+     # - path to your volume:/app/public/uploads
     
     environment:
       - NODE_ENV=production
