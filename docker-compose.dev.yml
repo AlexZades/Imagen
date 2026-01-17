@@ -2,9 +2,12 @@ version: '3.8'
 
 services:
   web:
-    image: ghcr.io/alexzades/alexzades:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
     
-    container_name: pixelvault-web
+    container_name: pixelvault-web-dev
     
     ports:
       - "4144:4144"
