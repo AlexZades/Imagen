@@ -1,8 +1,21 @@
 version: '3.8'
 
 services:
+  # Migration runner - runs once before the app starts
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: pixelvault-migrate
+    environment:
+      - DATABASE_URL=postgresql://admin:internal1234@192.168.0.17:5432/Imagen?schema=public
+    command: npx prisma migrate deploy
+    restart: "no"
+    profiles:
+      - tools
+
   web:
-    # Build locally from Dockerfile
     build:
       context: .
       dockerfile: Dockerfile
@@ -13,11 +26,7 @@ services:
       - "4144:4144"
     
     volumes:
-      # Mount external directory for uploads
-      # Change /path/to/your/uploads to your actual directory path
       - C:/Users/az/OneDrive/Desktop/Test:/app/public/uploads
-      # Alternative: Use a named volume (uncomment if you prefer)
-      # - pixelvault_uploads:/app/public/uploads
     
     environment:
       - NODE_ENV=production
@@ -35,8 +44,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
-# Uncomment if using named volume instead of external directory
-# volumes:
-#   pixelvault_uploads:
-#     driver: local

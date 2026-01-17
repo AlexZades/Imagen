@@ -3,41 +3,26 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package files AND prisma schema (needed for postinstall script)
 COPY package.json ./
 COPY prisma ./prisma
 
-# Install ALL dependencies (including dev) for build
 RUN npm install --legacy-peer-deps
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
-
-# Copy all source files INCLUDING prisma directory
 COPY . .
 
 # Generate Prisma Client
-RUN node node_modules/prisma/build/index.js generate
+RUN npx prisma generate
 
-# Build Next.js application
+# Build Next.js
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Stage 3: Production dependencies
-FROM node:20-alpine AS prod-deps
-WORKDIR /app
-
-COPY package.json ./
-COPY prisma ./prisma
-
-# Install only production dependencies
-RUN npm install --legacy-peer-deps --omit=dev
-
-# Stage 4: Runner
+# Stage 3: Runner (minimal production image)
 FROM node:20-alpine AS runner
 WORKDIR /app
 
@@ -47,19 +32,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy necessary files from builder
+# Copy only what's needed to run
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-
-# Copy Prisma schema and generated client
-COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# Copy ALL production node_modules (includes prisma CLI and all dependencies)
-COPY --from=prod-deps /app/node_modules ./node_modules
-
-# Create uploads directory with proper permissions
+# Create uploads directory
 RUN mkdir -p /app/public/uploads/thumbnails && \
     chown -R nextjs:nodejs /app/public/uploads
 
@@ -70,5 +49,5 @@ EXPOSE 4144
 ENV PORT=4144
 ENV HOSTNAME="0.0.0.0"
 
-# Run migrations using node to execute prisma CLI and start the app
-CMD node node_modules/prisma/build/index.js migrate deploy && node server.js
+# Just start the app - migrations should be run separately
+CMD ["node", "server.js"]
