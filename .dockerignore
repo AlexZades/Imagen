@@ -52,7 +52,6 @@ docker-compose*.yml
 *.db
 *.db-journal
 data/
-prisma/migrations/*_migration.sql
 
 # Uploads (will be mounted as volume)
 public/uploads/*
@@ -64,3 +63,7 @@ scripts/
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
+
+# IMPORTANT: Do NOT ignore prisma directory
+# !prisma/
+# !prisma/schema.prisma

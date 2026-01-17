@@ -16,14 +16,14 @@ WORKDIR /app
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copy application code
-COPY . .
-
-# Copy Prisma schema (CRITICAL - must be present for build)
+# Copy Prisma schema FIRST (before any other files)
 COPY prisma ./prisma
 
-# Generate Prisma Client
+# Generate Prisma Client (must happen before build)
 RUN npx prisma generate
+
+# Copy rest of application code
+COPY . .
 
 # Build Next.js application
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -40,12 +40,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Copy Prisma files and generated client
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
 # Copy necessary files from builder
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Create uploads directory with proper permissions
 RUN mkdir -p /app/public/uploads/thumbnails && \
