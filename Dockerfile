@@ -4,10 +4,8 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy package files
-COPY package.json ./
-
-# Install dependencies (use npm install to generate fresh lock file)
-RUN npm install --legacy-peer-deps
+COPY package.json package-lock.json* ./
+RUN npm ci
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
@@ -16,14 +14,11 @@ WORKDIR /app
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copy Prisma schema FIRST (before any other files)
-COPY prisma ./prisma
-
-# Generate Prisma Client (must happen before build)
-RUN npx prisma generate
-
-# Copy rest of application code
+# Copy all source files INCLUDING prisma directory
 COPY . .
+
+# Generate Prisma Client BEFORE building Next.js
+RUN npx prisma generate
 
 # Build Next.js application
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -36,19 +31,18 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Create non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
-
-# Copy Prisma files and generated client
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 # Copy necessary files from builder
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+
+# Copy Prisma files for runtime migrations
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 # Create uploads directory with proper permissions
 RUN mkdir -p /app/public/uploads/thumbnails && \
@@ -56,12 +50,10 @@ RUN mkdir -p /app/public/uploads/thumbnails && \
 
 USER nextjs
 
-# Expose port (will be overridden by PORT env var)
-EXPOSE 3000
+EXPOSE 4144
 
-# Set default port
-ENV PORT=3000
+ENV PORT=4144
 ENV HOSTNAME="0.0.0.0"
 
-# Start the application with PORT variable
-CMD ["sh", "-c", "node server.js"]
+# Run migrations and start the app
+CMD npx prisma migrate deploy && node server.js
