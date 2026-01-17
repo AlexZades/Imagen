@@ -1,12 +1,12 @@
 version: '3.8'
 
 services:
-  # Migration runner - runs once before the app starts
+  # Migration runner - uses the migrator stage with full dependencies
   migrate:
     build:
       context: .
       dockerfile: Dockerfile
-      target: builder
+      target: migrator
     container_name: pixelvault-migrate
     environment:
       - DATABASE_URL=postgresql://admin:internal1234@192.168.0.17:5432/Imagen?schema=public
@@ -19,6 +19,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: runner
     
     container_name: pixelvault-web
     

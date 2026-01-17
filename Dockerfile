@@ -22,7 +22,16 @@ RUN npx prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Stage 3: Runner (minimal production image)
+# Stage 3: Migration runner (full node_modules for Prisma CLI)
+FROM node:20-alpine AS migrator
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY prisma ./prisma
+
+# This stage has everything needed to run migrations
+
+# Stage 4: Runner (minimal production image)
 FROM node:20-alpine AS runner
 WORKDIR /app
 
