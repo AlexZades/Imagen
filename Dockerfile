@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package.json ./
 COPY prisma ./prisma
 
-# Use npm install instead of npm ci since there's no package-lock.json
+# Install ALL dependencies (including dev) for build
 RUN npm install --legacy-peer-deps
 
 # Stage 2: Builder
@@ -20,14 +20,24 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy all source files INCLUDING prisma directory
 COPY . .
 
-# Generate Prisma Client using node to run the prisma CLI
+# Generate Prisma Client
 RUN node node_modules/prisma/build/index.js generate
 
 # Build Next.js application
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Stage 3: Runner
+# Stage 3: Production dependencies
+FROM node:20-alpine AS prod-deps
+WORKDIR /app
+
+COPY package.json ./
+COPY prisma ./prisma
+
+# Install only production dependencies
+RUN npm install --legacy-peer-deps --omit=dev
+
+# Stage 4: Runner
 FROM node:20-alpine AS runner
 WORKDIR /app
 
@@ -42,12 +52,12 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Copy Prisma files for runtime migrations (include all dependencies)
+# Copy Prisma schema and generated client
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/effect ./node_modules/effect
+
+# Copy ALL production node_modules (includes prisma CLI and all dependencies)
+COPY --from=prod-deps /app/node_modules ./node_modules
 
 # Create uploads directory with proper permissions
 RUN mkdir -p /app/public/uploads/thumbnails && \
