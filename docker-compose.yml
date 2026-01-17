@@ -1,20 +1,6 @@
 version: '3.8'
 
 services:
-  # Migration runner - uses the migrator stage with full dependencies
-  migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: migrator
-    container_name: pixelvault-migrate
-    environment:
-      - DATABASE_URL=postgresql://admin:internal1234@192.168.0.17:5432/Imagen?schema=public
-    command: npx prisma migrate deploy
-    restart: "no"
-    profiles:
-      - tools
-
   web:
     build:
       context: .
@@ -36,6 +22,9 @@ services:
       - DATABASE_URL=postgresql://admin:internal1234@192.168.0.17:5432/Imagen?schema=public
       - COMFYUI_API_URL=http://192.168.0.16:3000
       # - AUTO_GENERATION_SECRET=your-secret-token-here
+      
+      # Set to "true" to run migrations on startup
+      - AUTO_MIGRATE=true
     
     restart: unless-stopped
     

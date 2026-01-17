@@ -62,6 +62,9 @@ COMFYUI_API_URL="http://your-comfyui-instance:port"
 
 # Auto-generation secret (for scheduled generation)
 AUTO_GENERATION_SECRET="your-secret-token-here"
+
+# Auto-run migrations on startup (Docker only)
+AUTO_MIGRATE=true
 ```
 
 ### 3. Database Setup
@@ -84,13 +87,10 @@ Visit `http://localhost:4414`
 
 ## Docker Deployment
 
-### Quick Start
+### Quick Start (Automatic Migrations)
 
 ```bash
-# 1. Run migrations FIRST (one-time or when updating)
-docker compose run --rm migrate
-
-# 2. Start the application
+# Just start - migrations run automatically
 docker compose up -d
 
 # View logs
@@ -100,21 +100,46 @@ docker compose logs -f web
 docker compose down
 ```
 
-### Production Deployment Workflow
+### Migration Control
 
-**Initial Setup:**
-```bash
-# 1. Build the image
-docker compose build
+The `AUTO_MIGRATE` environment variable controls whether migrations run on startup:
 
-# 2. Run migrations
-docker compose run --rm migrate
-
-# 3. Start the app
-docker compose up -d
+```yaml
+environment:
+  - AUTO_MIGRATE=true   # Run migrations on every startup (default)
+  # - AUTO_MIGRATE=false  # Skip migrations (manual control)
 ```
 
-**Updating the Application:**
+**When to use AUTO_MIGRATE:**
+
+- ✅ **true** (recommended for self-hosted): Simple, automatic, works great for single-instance deployments
+- ❌ **false**: For advanced setups with multiple replicas or manual migration control
+
+### Manual Migration Control
+
+If you prefer to run migrations manually:
+
+```bash
+# Disable auto-migrations in docker-compose.yml
+environment:
+  - AUTO_MIGRATE=false
+
+# Run migrations manually when needed
+docker compose exec web npx prisma migrate deploy
+```
+
+### Production Deployment Workflow
+
+**Simple approach (AUTO_MIGRATE=true):**
+```bash
+# 1. Pull latest code
+git pull
+
+# 2. Rebuild and restart
+docker compose up -d --build
+```
+
+**Manual approach (AUTO_MIGRATE=false):**
 ```bash
 # 1. Pull latest code
 git pull
@@ -122,8 +147,8 @@ git pull
 # 2. Rebuild image
 docker compose build
 
-# 3. Run any new migrations
-docker compose run --rm migrate
+# 3. Run migrations
+docker compose exec web npx prisma migrate deploy
 
 # 4. Restart the app
 docker compose up -d
@@ -138,6 +163,7 @@ environment:
   DATABASE_URL: "postgresql://admin:password@postgres:5432/imagen?schema=public"
   COMFYUI_API_URL: "http://your-comfyui:8188"
   AUTO_GENERATION_SECRET: "your-secret-token"
+  AUTO_MIGRATE: "true"
   PORT: 4414
 ```
 
@@ -149,17 +175,12 @@ If you're using the pre-built image from GHCR:
 # Pull the latest image
 docker pull ghcr.io/alexzades/alexzades:latest
 
-# Run migrations (using the builder stage)
-docker run --rm \
-  -e DATABASE_URL="your-database-url" \
-  ghcr.io/alexzades/alexzades:latest \
-  npx prisma migrate deploy
-
-# Start the app
+# Start with auto-migrations
 docker run -d \
   -p 4144:4144 \
   -e DATABASE_URL="your-database-url" \
   -e COMFYUI_API_URL="your-comfyui-url" \
+  -e AUTO_MIGRATE=true \
   -v /path/to/uploads:/app/public/uploads \
   ghcr.io/alexzades/alexzades:latest
 ```
@@ -247,27 +268,30 @@ This project is a mess so don't deploy it as a production service (just don't)
 - File uploads are validated and sanitized
 - SQL injection protected by Prisma
 
-## Production Deployment Best Practices
+## Migration Strategies
 
-### Database Migrations
+### AUTO_MIGRATE=true (Recommended for Self-Hosted)
 
-**❌ DON'T:** Run migrations inside the container at startup
-**✅ DO:** Run migrations as a separate step before deploying
+**Pros:**
+- ✅ Simple - just restart the container
+- ✅ No manual steps
+- ✅ Perfect for single-instance deployments
+- ✅ Migrations are idempotent (safe to run multiple times)
 
-```bash
-# Good: Separate migration step
-docker compose run --rm migrate
-docker compose up -d
+**Cons:**
+- ❌ Slightly slower startup (only on first run or when migrations exist)
+- ❌ Not ideal for multi-replica deployments
 
-# Bad: Migrations in CMD (causes issues with multiple replicas, slow startups)
-```
+### AUTO_MIGRATE=false (Advanced)
 
-### Why Separate Migrations?
+**Pros:**
+- ✅ Faster startups
+- ✅ Full control over when migrations run
+- ✅ Better for multi-replica setups
 
-1. **Multiple Replicas**: If you scale to multiple containers, each would try to run migrations simultaneously
-2. **Faster Startups**: App starts immediately without waiting for migrations
-3. **Better Error Handling**: Migration failures don't crash your app
-4. **Rollback Safety**: You can test migrations before deploying the new app version
+**Cons:**
+- ❌ Requires manual migration step
+- ❌ More complex deployment workflow
 
 ## Troubleshooting
 
@@ -283,11 +307,25 @@ docker compose up -d
 # Check migration status
 npx prisma migrate status
 
+# Force migrations (if AUTO_MIGRATE is disabled)
+docker compose exec web npx prisma migrate deploy
+
 # Reset database (⚠️ DESTRUCTIVE - deletes all data)
 npx prisma migrate reset
+```
 
-# Apply pending migrations
-npx prisma migrate deploy
+### Migration Logs
+
+Check container logs to see migration output:
+```bash
+docker compose logs web
+```
+
+You should see:
+```
+🚀 Starting PixelVault...
+🔄 AUTO_MIGRATE enabled - running database migrations...
+✅ Migrations complete!
 ```
 
 ## Contributing
