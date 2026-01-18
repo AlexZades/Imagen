@@ -47,8 +47,9 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Create uploads directory
-RUN mkdir -p /app/public/uploads && chown -R nextjs:nodejs /app
+# Create uploads directory and npm cache directory with proper permissions
+RUN mkdir -p /app/public/uploads /tmp/.npm && \
+    chown -R nextjs:nodejs /app /tmp/.npm
 
 USER nextjs
 

@@ -3,6 +3,9 @@ set -e
 
 echo "🚀 Starting PixelVault..."
 
+# Set npm cache to a writable location
+export npm_config_cache=/tmp/.npm
+
 # Run migrations if AUTO_MIGRATE is enabled
 if [ "$AUTO_MIGRATE" = "true" ]; then
   echo "🔄 AUTO_MIGRATE enabled - running database migrations..."
