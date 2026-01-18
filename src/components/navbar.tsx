@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { User, Upload, LogOut, Image as ImageIcon, Shield } from 'lucide-react';
+import { User, Upload, LogOut, Shield } from 'lucide-react';
 
 export function Navbar() {
   const { user, logout } = useAuth();
@@ -20,7 +21,13 @@ export function Navbar() {
     <nav className="border-b bg-background">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-          <ImageIcon className="w-6 h-6" />
+          <Image 
+            src="/logo.png" 
+            alt="Imagen Logo" 
+            width={24} 
+            height={24}
+            className="w-6 h-6"
+          />
           Imagen
         </Link>
 
