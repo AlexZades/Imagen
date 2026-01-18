@@ -372,7 +372,6 @@ export function GenerationSettings({ userId }: { userId: string }) {
                   value={config.randomMaxTags}
                   onChange={(v) => updateConfig('randomMaxTags', v)}
                   min={config.randomMinTags}
-                  max={10}
                   step={1}
                   tooltip="Maximum number of simple tags for random images"
                 />
