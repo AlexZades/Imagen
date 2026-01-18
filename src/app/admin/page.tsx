@@ -32,6 +32,7 @@ import { TestGenerator } from '@/components/admin/test-generator';
 import { AutoGenerationTest } from '@/components/admin/auto-generation-test';
 import { SimpleTagsViewer } from '@/components/admin/simple-tags-viewer';
 import { FallbackTagsEditor } from '@/components/admin/fallback-tags-editor';
+import { GenerationSettings } from '@/components/admin/generation-settings';
 import { toast } from 'sonner';
 import { Edit, Trash2, Plus, X, Save } from 'lucide-react';
 
@@ -380,6 +381,7 @@ export default function AdminPage() {
           <TabsList>
             <TabsTrigger value="generator">Test Generator</TabsTrigger>
             <TabsTrigger value="auto-generation">Auto-Generation</TabsTrigger>
+            <TabsTrigger value="generation-settings">Algorithm Settings</TabsTrigger>
             <TabsTrigger value="tags">Tags</TabsTrigger>
             <TabsTrigger value="styles">Styles</TabsTrigger>
             <TabsTrigger value="simple-tags">Simple Tags</TabsTrigger>
@@ -392,6 +394,10 @@ export default function AdminPage() {
 
           <TabsContent value="auto-generation" className="mt-6">
             <AutoGenerationTest />
+          </TabsContent>
+
+          <TabsContent value="generation-settings" className="mt-6">
+            <GenerationSettings userId={user.id} />
           </TabsContent>
 
           <TabsContent value="simple-tags" className="mt-6">
