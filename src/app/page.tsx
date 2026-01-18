@@ -6,7 +6,6 @@ import { Navbar } from '@/components/navbar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Heart, Eye, Sparkles, Clock, Shuffle } from 'lucide-react';
-import { MadeWithDyad } from '@/components/made-with-dyad';
 import { useAuth } from '@/contexts/auth-context';
 
 interface Image {
@@ -190,8 +189,6 @@ export default function Home() {
           )}
         </section>
       </main>
-
-      <MadeWithDyad />
     </div>
   );
 }

@@ -7,7 +7,6 @@ import { Navbar } from '@/components/navbar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Heart, Eye, Search, Tag as TagIcon, Palette } from 'lucide-react';
-import { MadeWithDyad } from '@/components/made-with-dyad';
 
 interface Image {
   id: string;
@@ -197,7 +196,6 @@ export default function SearchPage() {
       }>
         <SearchContent />
       </Suspense>
-      <MadeWithDyad />
     </div>
   );
 }

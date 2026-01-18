@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PixelVault - Image Hosting Platform",
+  title: "Imagen - Image Hosting Platform",
   description: "A self-hosted image hosting and browsing platform",
 };
 
