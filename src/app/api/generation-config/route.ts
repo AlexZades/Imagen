@@ -13,6 +13,7 @@ interface GenerationConfig {
   key: string;
   value: string;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export async function GET(request: NextRequest) {
