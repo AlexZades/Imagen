@@ -182,7 +182,7 @@ export function GenerationSettings({ userId }: { userId: string }) {
 
             <TabsContent value="global" className="space-y-6 mt-6">
               <div className="grid grid-cols-2 gap-6">
-                <SettingSlider
+                <SettingInput
                   label="Images Per User"
                   value={config.imagesPerUser}
                   onChange={(v) => updateConfig('imagesPerUser', v)}
@@ -192,7 +192,7 @@ export function GenerationSettings({ userId }: { userId: string }) {
                   tooltip="Total number of images to generate per user in each batch"
                 />
 
-                <SettingSlider
+                <SettingInput
                   label="Close Recommendations Count"
                   value={config.closeRecommendationsCount}
                   onChange={(v) => updateConfig('closeRecommendationsCount', v)}
@@ -202,7 +202,7 @@ export function GenerationSettings({ userId }: { userId: string }) {
                   tooltip="Number of images based on slight variations of user's liked images"
                 />
 
-                <SettingSlider
+                <SettingInput
                   label="Mixed Recommendations Count"
                   value={config.mixedRecommendationsCount}
                   onChange={(v) => updateConfig('mixedRecommendationsCount', v)}
@@ -212,7 +212,7 @@ export function GenerationSettings({ userId }: { userId: string }) {
                   tooltip="Number of images mixing elements from multiple liked images"
                 />
 
-                <SettingSlider
+                <SettingInput
                   label="Random Count"
                   value={config.randomCount}
                   onChange={(v) => updateConfig('randomCount', v)}
@@ -222,7 +222,7 @@ export function GenerationSettings({ userId }: { userId: string }) {
                   tooltip="Number of completely random images to generate"
                 />
 
-                <SettingSlider
+                <SettingInput
                   label="Multi-Tag Probability"
                   value={config.multiTagProbability}
                   onChange={(v) => updateConfig('multiTagProbability', v)}
@@ -233,7 +233,7 @@ export function GenerationSettings({ userId }: { userId: string }) {
                   tooltip="Probability of using multiple tags instead of just one"
                 />
 
-                <SettingSlider
+                <SettingInput
                   label="Max Tags Per Image"
                   value={config.maxTagsPerImage}
                   onChange={(v) => updateConfig('maxTagsPerImage', v)}
@@ -243,7 +243,7 @@ export function GenerationSettings({ userId }: { userId: string }) {
                   tooltip="Maximum number of tags (LoRAs) to use per image (ComfyUI limit: 4)"
                 />
 
-                <SettingSlider
+                <SettingInput
                   label="Style Variation Probability"
                   value={config.styleVariationProbability}
                   onChange={(v) => updateConfig('styleVariationProbability', v)}
@@ -254,7 +254,7 @@ export function GenerationSettings({ userId }: { userId: string }) {
                   tooltip="Probability of using a different style than the base image"
                 />
 
-                <SettingSlider
+                <SettingInput
                   label="LoRA Weight Variation"
                   value={config.loraWeightVariation}
                   onChange={(v) => updateConfig('loraWeightVariation', v)}
@@ -269,7 +269,7 @@ export function GenerationSettings({ userId }: { userId: string }) {
 
             <TabsContent value="close" className="space-y-6 mt-6">
               <div className="grid grid-cols-2 gap-6">
-                <SettingSlider
+                <SettingInput
                   label="Swap Probability"
                   value={config.closeSwapProbability}
                   onChange={(v) => updateConfig('closeSwapProbability', v)}
@@ -280,7 +280,7 @@ export function GenerationSettings({ userId }: { userId: string }) {
                   tooltip="Probability of swapping a simple tag with another from user's preferences"
                 />
 
-                <SettingSlider
+                <SettingInput
                   label="Add Probability"
                   value={config.closeAddProbability}
                   onChange={(v) => updateConfig('closeAddProbability', v)}
@@ -291,7 +291,7 @@ export function GenerationSettings({ userId }: { userId: string }) {
                   tooltip="Probability of adding a new simple tag from user's preferences"
                 />
 
-                <SettingSlider
+                <SettingInput
                   label="Drop Probability"
                   value={config.closeDropProbability}
                   onChange={(v) => updateConfig('closeDropProbability', v)}
@@ -302,7 +302,7 @@ export function GenerationSettings({ userId }: { userId: string }) {
                   tooltip="Probability of removing a simple tag from the base image"
                 />
 
-                <SettingSlider
+                <SettingInput
                   label="Max Swaps"
                   value={config.closeMaxSwaps}
                   onChange={(v) => updateConfig('closeMaxSwaps', v)}
@@ -324,7 +324,7 @@ export function GenerationSettings({ userId }: { userId: string }) {
 
             <TabsContent value="mixed" className="space-y-6 mt-6">
               <div className="grid grid-cols-2 gap-6">
-                <SettingSlider
+                <SettingInput
                   label="Pool Size"
                   value={config.mixedPoolSize}
                   onChange={(v) => updateConfig('mixedPoolSize', v)}
@@ -334,7 +334,7 @@ export function GenerationSettings({ userId }: { userId: string }) {
                   tooltip="Number of liked images to combine elements from"
                 />
 
-                <SettingSlider
+                <SettingInput
                   label="Tag Mix Probability"
                   value={config.mixedTagMixProbability}
                   onChange={(v) => updateConfig('mixedTagMixProbability', v)}
@@ -357,7 +357,7 @@ export function GenerationSettings({ userId }: { userId: string }) {
 
             <TabsContent value="random" className="space-y-6 mt-6">
               <div className="grid grid-cols-2 gap-6">
-                <SettingSlider
+                <SettingInput
                   label="Min Tags"
                   value={config.randomMinTags}
                   onChange={(v) => updateConfig('randomMinTags', v)}
@@ -367,7 +367,7 @@ export function GenerationSettings({ userId }: { userId: string }) {
                   tooltip="Minimum number of simple tags for random images"
                 />
 
-                <SettingSlider
+                <SettingInput
                   label="Max Tags"
                   value={config.randomMaxTags}
                   onChange={(v) => updateConfig('randomMaxTags', v)}
@@ -447,7 +447,7 @@ export function GenerationSettings({ userId }: { userId: string }) {
   );
 }
 
-interface SettingSliderProps {
+interface SettingInputProps {
   label: string;
   value: number;
   onChange: (value: number) => void;
@@ -458,7 +458,7 @@ interface SettingSliderProps {
   isPercentage?: boolean;
 }
 
-function SettingSlider({
+function SettingInput({
   label,
   value,
   onChange,
@@ -467,7 +467,7 @@ function SettingSlider({
   step,
   tooltip,
   isPercentage = false,
-}: SettingSliderProps) {
+}: SettingInputProps) {
   const displayValue = isPercentage ? `${Math.round(value * 100)}%` : value.toString();
 
   return (
