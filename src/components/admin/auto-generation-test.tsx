@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, Play, CheckCircle, XCircle, Clock, Sparkles, Shuffle, Target } from 'lucide-react';
+import { Loader2, Play, CheckCircle, XCircle, Clock, Sparkles, Shuffle, Target, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 
 interface GenerationResult {
@@ -33,16 +33,83 @@ interface GenerationReport {
   durationMs: number;
 }
 
+interface GenerationConfig {
+  imagesPerUser: number;
+  closeRecommendationsCount: number;
+  mixedRecommendationsCount: number;
+  randomCount: number;
+  multiTagProbability: number;
+  maxTagsPerImage: number;
+  closeSwapProbability: number;
+  closeAddProbability: number;
+  closeDropProbability: number;
+  closeMaxSwaps: number;
+  mixedPoolSize: number;
+  mixedTagMixProbability: number;
+  randomMinTags: number;
+  randomMaxTags: number;
+  styleVariationProbability: number;
+  loraWeightVariation: number;
+}
+
+const DEFAULT_CONFIG: GenerationConfig = {
+  imagesPerUser: 6,
+  closeRecommendationsCount: 2,
+  mixedRecommendationsCount: 2,
+  randomCount: 2,
+  multiTagProbability: 0.5,
+  maxTagsPerImage: 4,
+  closeSwapProbability: 0.4,
+  closeAddProbability: 0.3,
+  closeDropProbability: 0.2,
+  closeMaxSwaps: 2,
+  mixedPoolSize: 2,
+  mixedTagMixProbability: 0.6,
+  randomMinTags: 1,
+  randomMaxTags: 3,
+  styleVariationProbability: 0.3,
+  loraWeightVariation: 0.5,
+};
+
 export function AutoGenerationTest() {
   const { user } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
   const [report, setReport] = useState<GenerationReport | null>(null);
+  const [config, setConfig] = useState<GenerationConfig>(DEFAULT_CONFIG);
   
-  // Configuration state
+  // Configuration state for display
   const [imagesPerUser, setImagesPerUser] = useState(6);
   const [closeCount, setCloseCount] = useState(2);
   const [mixedCount, setMixedCount] = useState(2);
   const [randomCount, setRandomCount] = useState(2);
+
+  useEffect(() => {
+    loadConfig();
+  }, []);
+
+  const loadConfig = async () => {
+    setIsLoadingConfig(true);
+    try {
+      const response = await fetch('/api/generation-config?key=algorithm_settings');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.value) {
+          const savedConfig = JSON.parse(data.value);
+          setConfig(savedConfig);
+          setImagesPerUser(savedConfig.imagesPerUser);
+          setCloseCount(savedConfig.closeRecommendationsCount);
+          setMixedCount(savedConfig.mixedRecommendationsCount);
+          setRandomCount(savedConfig.randomCount);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading config:', error);
+      toast.error('Failed to load saved configuration, using defaults');
+    } finally {
+      setIsLoadingConfig(false);
+    }
+  };
 
   const handleTestGeneration = async () => {
     if (!user) {
@@ -56,6 +123,17 @@ export function AutoGenerationTest() {
     try {
       console.log('Starting test generation via API...');
 
+      // Use the full config from database, only override the counts from UI
+      const testConfig = {
+        ...config,
+        imagesPerUser,
+        closeRecommendationsCount: closeCount,
+        mixedRecommendationsCount: mixedCount,
+        randomCount,
+      };
+
+      console.log('Using config:', testConfig);
+
       // Call the API endpoint
       const response = await fetch('/api/auto-generate/test', {
         method: 'POST',
@@ -64,12 +142,7 @@ export function AutoGenerationTest() {
         },
         body: JSON.stringify({
           userId: user.id,
-          config: {
-            imagesPerUser,
-            closeRecommendationsCount: closeCount,
-            mixedRecommendationsCount: mixedCount,
-            randomCount,
-          },
+          config: testConfig,
         }),
       });
 
@@ -181,7 +254,18 @@ export function AutoGenerationTest() {
           </div>
 
           <div className="bg-muted p-4 rounded-lg space-y-2">
-            <p className="text-sm font-medium">Generation Types:</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">Generation Types:</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={loadConfig}
+                disabled={isLoadingConfig}
+              >
+                <RefreshCw className={`w-3 h-3 mr-1 ${isLoadingConfig ? 'animate-spin' : ''}`} />
+                Reload Config
+              </Button>
+            </div>
             <div className="flex flex-wrap gap-2">
               <Badge variant="default" className="gap-1">
                 <Target className="w-3 h-3" />
@@ -196,11 +280,14 @@ export function AutoGenerationTest() {
                 Random: Pure exploration
               </Badge>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Using saved settings: Min Tags: {config.randomMinTags}, Max Tags: {config.randomMaxTags}
+            </p>
           </div>
 
           <Button
             onClick={handleTestGeneration}
-            disabled={isGenerating}
+            disabled={isGenerating || isLoadingConfig}
             className="w-full"
           >
             {isGenerating ? (

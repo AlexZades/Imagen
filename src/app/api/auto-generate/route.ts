@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateImagesForAllUsers, DEFAULT_CONFIG } from '@/lib/auto-generation';
+import { generateImagesForAllUsers, DEFAULT_CONFIG, type GenerationConfig } from '@/lib/auto-generation';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,11 +22,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse optional config from request body
-    const body = await request.json().catch(() => ({}));
-    const config = body.config || DEFAULT_CONFIG;
+    // Load config from database or use default
+    let config: GenerationConfig = DEFAULT_CONFIG;
+    
+    try {
+      const savedConfig = await prisma.generationConfig.findUnique({
+        where: { key: 'algorithm_settings' }
+      });
+      
+      if (savedConfig && savedConfig.value) {
+        config = JSON.parse(savedConfig.value);
+        console.log('Loaded config from database:', config);
+      } else {
+        console.log('No saved config found, using defaults');
+      }
+    } catch (error) {
+      console.error('Error loading config from database, using defaults:', error);
+    }
 
-    console.log('Starting scheduled auto-generation...');
+    // Parse optional config override from request body
+    const body = await request.json().catch(() => ({}));
+    if (body.config) {
+      config = { ...config, ...body.config };
+      console.log('Config overridden from request body');
+    }
+
+    console.log('Starting scheduled auto-generation with config:', config);
 
     // Run the generation process
     const report = await generateImagesForAllUsers(config);
