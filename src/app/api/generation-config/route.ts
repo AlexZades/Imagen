@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     // Upsert the config
     const config = await prisma.generationConfig.upsert({
       where: { key },
-      update: { value, updatedAt: new Date() },
+      update: { value },
       create: { key, value },
     });
 
