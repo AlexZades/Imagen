@@ -299,6 +299,134 @@ export default function CreatePage() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
+      <style jsx>{`
+        @keyframes rainbow-gradient {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+
+        @keyframes sparkle {
+          0%, 100% {
+            opacity: 0;
+            transform: scale(0);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-20px);
+          }
+        }
+
+        @keyframes pulse-glow {
+          0%, 100% {
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3),
+                        0 0 40px rgba(255, 0, 255, 0.2),
+                        0 0 60px rgba(0, 255, 255, 0.2);
+          }
+          50% {
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.5),
+                        0 0 60px rgba(255, 0, 255, 0.4),
+                        0 0 90px rgba(0, 255, 255, 0.4);
+          }
+        }
+
+        .rainbow-gradient-bg {
+          background: linear-gradient(
+            45deg,
+            #ff0000,
+            #ff7f00,
+            #ffff00,
+            #00ff00,
+            #0000ff,
+            #4b0082,
+            #9400d3,
+            #ff0000
+          );
+          background-size: 400% 400%;
+          animation: rainbow-gradient 3s ease infinite;
+        }
+
+        .sparkle {
+          position: absolute;
+          width: 4px;
+          height: 4px;
+          background: white;
+          border-radius: 50%;
+          animation: sparkle 2s ease-in-out infinite;
+        }
+
+        .sparkle:nth-child(1) {
+          top: 20%;
+          left: 20%;
+          animation-delay: 0s;
+        }
+
+        .sparkle:nth-child(2) {
+          top: 40%;
+          left: 80%;
+          animation-delay: 0.3s;
+        }
+
+        .sparkle:nth-child(3) {
+          top: 60%;
+          left: 30%;
+          animation-delay: 0.6s;
+        }
+
+        .sparkle:nth-child(4) {
+          top: 80%;
+          left: 70%;
+          animation-delay: 0.9s;
+        }
+
+        .sparkle:nth-child(5) {
+          top: 30%;
+          left: 50%;
+          animation-delay: 1.2s;
+        }
+
+        .sparkle:nth-child(6) {
+          top: 70%;
+          left: 60%;
+          animation-delay: 1.5s;
+        }
+
+        .sparkle:nth-child(7) {
+          top: 50%;
+          left: 15%;
+          animation-delay: 1.8s;
+        }
+
+        .sparkle:nth-child(8) {
+          top: 25%;
+          left: 85%;
+          animation-delay: 2.1s;
+        }
+
+        .float-animation {
+          animation: float 3s ease-in-out infinite;
+        }
+
+        .pulse-glow {
+          animation: pulse-glow 2s ease-in-out infinite;
+        }
+      `}</style>
+
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-3 mb-8">
@@ -468,12 +596,32 @@ export default function CreatePage() {
                   <CardDescription>Your generated image will appear here</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="aspect-square bg-muted rounded-lg flex items-center justify-center overflow-hidden">
+                  <div className="aspect-square bg-muted rounded-lg flex items-center justify-center overflow-hidden relative">
                     {isGenerating ? (
-                      <div className="text-center">
-                        <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-                        <p className="text-muted-foreground">Generating your image...</p>
-                        <p className="text-xs text-muted-foreground mt-2">This may take ~30 seconds</p>
+                      <div className="absolute inset-0 rainbow-gradient-bg pulse-glow rounded-lg">
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="text-center z-10">
+                            <div className="float-animation mb-4">
+                              <Sparkles className="w-16 h-16 text-white mx-auto drop-shadow-lg" />
+                            </div>
+                            <p className="text-white font-semibold text-lg drop-shadow-lg">
+                              Creating Magic...
+                            </p>
+                            <p className="text-white/90 text-sm mt-2 drop-shadow-lg">
+                              This may take ~30 seconds
+                            </p>
+                          </div>
+                          
+                          {/* Sparkles */}
+                          <div className="sparkle"></div>
+                          <div className="sparkle"></div>
+                          <div className="sparkle"></div>
+                          <div className="sparkle"></div>
+                          <div className="sparkle"></div>
+                          <div className="sparkle"></div>
+                          <div className="sparkle"></div>
+                          <div className="sparkle"></div>
+                        </div>
                       </div>
                     ) : generatedImage ? (
                       <img
