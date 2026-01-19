@@ -632,7 +632,7 @@ export default function CreatePage() {
                               <Sparkles className="w-16 h-16 text-white mx-auto drop-shadow-lg" />
                             </div>
                             <p className="text-white font-semibold text-lg drop-shadow-lg">
-                              Creating Magic...
+                              Creating your image
                             </p>
                             <p className="text-white/90 text-sm mt-2 drop-shadow-lg">
                               This may take ~30 seconds
