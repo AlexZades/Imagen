@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/navbar';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, Eye, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Heart, Eye, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Image {
   id: string;
@@ -19,20 +20,33 @@ interface Image {
 export default function NewestPage() {
   const [images, setImages] = useState<Image[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalImages, setTotalImages] = useState(0);
+  const LIMIT = 50;
 
   useEffect(() => {
-    fetchImages();
-  }, []);
+    fetchImages(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [page]);
 
-  const fetchImages = async () => {
+  const fetchImages = async (currentPage: number) => {
+    setIsLoading(true);
     try {
-      const response = await fetch('/api/images?limit=50&sort=new');
+      const offset = (currentPage - 1) * LIMIT;
+      const response = await fetch(`/api/images?limit=${LIMIT}&sort=new&offset=${offset}`);
       const data = await response.json();
       setImages(data.images || []);
+      setTotalImages(data.total || 0);
     } catch (error) {
       console.error('Error fetching images:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= Math.ceil(totalImages / LIMIT)) {
+      setPage(newPage);
     }
   };
 
@@ -106,11 +120,39 @@ export default function NewestPage() {
             <p className="text-sm text-muted-foreground mt-2">Be the first to share something!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {images.map((image) => (
-              <ImageCard key={image.id} image={image} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {images.map((image) => (
+                <ImageCard key={image.id} image={image} />
+              ))}
+            </div>
+
+            {totalImages > LIMIT && (
+              <div className="flex justify-center items-center gap-4 mt-8 pb-8">
+                <Button
+                  variant="outline"
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={page <= 1}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-2" />
+                  Previous
+                </Button>
+                
+                <span className="text-sm font-medium">
+                  Page {page} of {Math.ceil(totalImages / LIMIT)}
+                </span>
+
+                <Button
+                  variant="outline"
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={page >= Math.ceil(totalImages / LIMIT)}
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
