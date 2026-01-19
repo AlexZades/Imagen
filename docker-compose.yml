@@ -11,8 +11,13 @@ services:
     # Run as root to avoid permission issues
     user: "0:0"
     
-    ports:
-      - "4144:4144"
+    # Use host network mode for TrueNAS Scale
+    # Comment out the next line and uncomment 'ports' if you prefer bridge mode
+    network_mode: host
+    
+    # Uncomment for bridge mode (default Docker networking)
+    # ports:
+    #   - "4144:4144"
     
     volumes:
       - X:/Services/Imagen/Imagen:/app/public/uploads
