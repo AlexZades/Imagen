@@ -6,11 +6,11 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy package files
-COPY package.json package-lock.json* ./
+COPY package.json ./
 COPY prisma ./prisma/
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (using npm install since package-lock.json may not exist)
+RUN npm install
 
 # Generate Prisma client
 RUN npx prisma generate
