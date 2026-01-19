@@ -48,6 +48,7 @@ export default function CreatePage() {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [showReveal, setShowReveal] = useState(false);
+  const [isImageFadingOut, setIsImageFadingOut] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -130,6 +131,13 @@ export default function CreatePage() {
     if (!selectedStyleObj?.checkpointName) {
       toast.error('Selected style must have a checkpoint name configured');
       return;
+    }
+
+    // Start the fade out process if an image exists
+    if (generatedImage) {
+      setIsImageFadingOut(true);
+      // Wait for the fade-out animation to complete
+      await new Promise(resolve => setTimeout(resolve, 400));
     }
 
     setIsGenerating(true);
