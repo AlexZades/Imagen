@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { User, Upload, LogOut, Shield, Home, Clock, Plus } from 'lucide-react';
+import { User, Upload, LogOut, Shield, Home, Clock, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function Navbar() {
@@ -23,7 +23,7 @@ export function Navbar() {
   const navItems = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/newest', label: 'Newest', icon: Clock },
-    { href: '/upload', label: 'Create', icon: Plus, requiresAuth: true },
+    { href: '/create', label: 'Create', icon: Sparkles, requiresAuth: true },
   ];
 
   return (
@@ -71,34 +71,43 @@ export function Navbar() {
 
           <div className="flex items-center gap-4">
             {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <User className="w-5 h-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <Link href={`/user/${user.id}`}>My Profile</Link>
-                  </DropdownMenuItem>
-                  {user.isAdmin && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link href="/admin">
-                          <Shield className="w-4 h-4 mr-2" />
-                          Admin Panel
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout}>
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <>
+                <Button asChild variant="ghost">
+                  <Link href="/upload">
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload
+                  </Link>
+                </Button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <User className="w-5 h-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link href={`/user/${user.id}`}>My Profile</Link>
+                    </DropdownMenuItem>
+                    {user.isAdmin && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin">
+                            <Shield className="w-4 h-4 mr-2" />
+                            Admin Panel
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={logout}>
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
             ) : (
               <>
                 <Button asChild variant="ghost">
