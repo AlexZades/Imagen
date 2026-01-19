@@ -21,7 +21,7 @@ services:
       - NODE_ENV=production
       - PORT=4144
       - HOSTNAME=0.0.0.0
-      - DATABASE_URL=postgresql://admin:internal1234@192.168.0.17:5432/Imagen?schema=public
+      - DATABASE_URL=postgresql://admin:internal1234@192.168.0.17:5432/ImagenProd?schema=public
       - COMFYUI_API_URL=http://192.168.0.16:3000
       # - AUTO_GENERATION_SECRET=your-secret-token-here
       
