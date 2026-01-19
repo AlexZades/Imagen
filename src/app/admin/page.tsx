@@ -34,7 +34,7 @@ import { SimpleTagsViewer } from '@/components/admin/simple-tags-viewer';
 import { FallbackTagsEditor } from '@/components/admin/fallback-tags-editor';
 import { GenerationSettings } from '@/components/admin/generation-settings';
 import { toast } from 'sonner';
-import { Edit, Trash2, Plus, X, Save } from 'lucide-react';
+import { Edit, Trash2, Plus, X, Save, Settings, Wrench } from 'lucide-react';
 
 interface Tag {
   id: string;
@@ -84,6 +84,8 @@ export default function AdminPage() {
   const [newStyleName, setNewStyleName] = useState('');
   const [newStyleDescription, setNewStyleDescription] = useState('');
   const [newStyleCheckpoint, setNewStyleCheckpoint] = useState('');
+
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || !user.isAdmin)) {
@@ -355,6 +357,33 @@ export default function AdminPage() {
     }
   };
 
+  const handleRegenerateThumbnails = async () => {
+    if (!user || !confirm('This will regenerate thumbnails for ALL images. This may take a while. Continue?')) return;
+
+    setIsRegenerating(true);
+    try {
+      const response = await fetch('/api/admin/regenerate-thumbnails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to regenerate thumbnails');
+      }
+
+      toast.success(`Thumbnails regenerated: ${data.processed} processed, ${data.errors} errors`);
+    } catch (error: any) {
+      toast.error(`Error: ${error.message}`);
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -386,6 +415,7 @@ export default function AdminPage() {
             <TabsTrigger value="styles">Styles</TabsTrigger>
             <TabsTrigger value="simple-tags">Simple Tags</TabsTrigger>
             <TabsTrigger value="fallback-tags">Fallback Tags</TabsTrigger>
+            <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
           </TabsList>
 
           <TabsContent value="generator" className="mt-6">
@@ -878,6 +908,45 @@ export default function AdminPage() {
                     ))}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="maintenance" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>System Maintenance</CardTitle>
+                <CardDescription>
+                  Perform system-wide maintenance tasks
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <h3 className="font-medium">Regenerate Thumbnails</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Re-creates thumbnail images for all uploaded photos. Useful if you've changed thumbnail dimensions or if files are missing.
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={handleRegenerateThumbnails} 
+                      disabled={isRegenerating}
+                    >
+                      {isRegenerating ? (
+                        <>
+                          <Wrench className="w-4 h-4 mr-2 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Wrench className="w-4 h-4 mr-2" />
+                          Regenerate
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
