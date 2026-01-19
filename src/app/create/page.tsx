@@ -309,12 +309,12 @@ export default function CreatePage() {
           }
         }
 
-        @keyframes rainbow-scroll {
+        @keyframes rainbow-scroll-diagonal {
           0% {
-            background-position: 0% 50%;
+            background-position: 0% 0%;
           }
           100% {
-            background-position: 200% 50%;
+            background-position: 200% 200%;
           }
         }
 
@@ -353,7 +353,7 @@ export default function CreatePage() {
 
         .pastel-rainbow-gradient-bg {
           background: linear-gradient(
-            90deg,
+            45deg,
             #FFB6C1,
             #FFD4B2,
             #FFF4A3,
@@ -370,8 +370,8 @@ export default function CreatePage() {
             #E6B4D0,
             #FFB6C1
           );
-          background-size: 200% 100%;
-          animation: fadeIn 0.8s ease-in, rainbow-scroll 8s linear infinite;
+          background-size: 400% 400%;
+          animation: fadeIn 0.8s ease-in, rainbow-scroll-diagonal 6s linear infinite;
           animation-delay: 0s, 0.8s;
         }
 
