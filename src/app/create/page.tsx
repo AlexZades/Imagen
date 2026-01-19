@@ -47,6 +47,7 @@ export default function CreatePage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [showReveal, setShowReveal] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -133,6 +134,7 @@ export default function CreatePage() {
 
     setIsGenerating(true);
     setGeneratedImage(null);
+    setShowReveal(false);
 
     try {
       // Randomize LoRA weights again on each generation
@@ -191,6 +193,7 @@ export default function CreatePage() {
 
       const data = await response.json();
       setGeneratedImage(`data:${data.contentType};base64,${data.image}`);
+      setShowReveal(true);
       
       // Auto-fill title if empty
       if (!title) {
@@ -351,6 +354,48 @@ export default function CreatePage() {
           }
         }
 
+        @keyframes curtainReveal {
+          0% {
+            clip-path: circle(0% at 50% 50%);
+            opacity: 1;
+          }
+          100% {
+            clip-path: circle(150% at 50% 50%);
+            opacity: 0;
+          }
+        }
+
+        @keyframes imageZoomIn {
+          0% {
+            transform: scale(0.8);
+            opacity: 0;
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+
+        @keyframes sparkleExplosion {
+          0% {
+            transform: translate(0, 0) scale(1);
+            opacity: 1;
+          }
+          100% {
+            transform: translate(var(--tx), var(--ty)) scale(0);
+            opacity: 0;
+          }
+        }
+
+        @keyframes shimmer {
+          0% {
+            background-position: -200% center;
+          }
+          100% {
+            background-position: 200% center;
+          }
+        }
+
         .pastel-rainbow-gradient-bg {
           background: linear-gradient(
             45deg,
@@ -373,6 +418,66 @@ export default function CreatePage() {
           background-size: 400% 400%;
           animation: fadeIn 0.8s ease-in, rainbow-scroll-diagonal 6s linear infinite;
           animation-delay: 0s, 0.8s;
+        }
+
+        .reveal-curtain {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            45deg,
+            #FFB6C1,
+            #FFD4B2,
+            #FFF4A3,
+            #B4E7CE,
+            #AED8E6,
+            #C5B4E3,
+            #E6B4D0
+          );
+          animation: curtainReveal 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+          z-index: 10;
+        }
+
+        .reveal-image {
+          animation: imageZoomIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s both;
+        }
+
+        .sparkle-burst {
+          position: absolute;
+          width: 8px;
+          height: 8px;
+          background: white;
+          border-radius: 50%;
+          box-shadow: 0 0 15px rgba(255, 255, 255, 0.9);
+          animation: sparkleExplosion 1s ease-out forwards;
+          pointer-events: none;
+        }
+
+        .sparkle-burst:nth-child(1) { --tx: -100px; --ty: -100px; animation-delay: 0s; }
+        .sparkle-burst:nth-child(2) { --tx: 100px; --ty: -100px; animation-delay: 0.05s; }
+        .sparkle-burst:nth-child(3) { --tx: -100px; --ty: 100px; animation-delay: 0.1s; }
+        .sparkle-burst:nth-child(4) { --tx: 100px; --ty: 100px; animation-delay: 0.15s; }
+        .sparkle-burst:nth-child(5) { --tx: 0px; --ty: -120px; animation-delay: 0.2s; }
+        .sparkle-burst:nth-child(6) { --tx: 0px; --ty: 120px; animation-delay: 0.25s; }
+        .sparkle-burst:nth-child(7) { --tx: -120px; --ty: 0px; animation-delay: 0.3s; }
+        .sparkle-burst:nth-child(8) { --tx: 120px; --ty: 0px; animation-delay: 0.35s; }
+        .sparkle-burst:nth-child(9) { --tx: -80px; --ty: -80px; animation-delay: 0.4s; }
+        .sparkle-burst:nth-child(10) { --tx: 80px; --ty: 80px; animation-delay: 0.45s; }
+        .sparkle-burst:nth-child(11) { --tx: 80px; --ty: -80px; animation-delay: 0.5s; }
+        .sparkle-burst:nth-child(12) { --tx: -80px; --ty: 80px; animation-delay: 0.55s; }
+
+        .shimmer-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.3) 50%,
+            transparent 100%
+          );
+          background-size: 200% 100%;
+          animation: shimmer 1.5s ease-in-out 0.6s 1;
+          pointer-events: none;
+          z-index: 5;
         }
 
         .sparkle {
@@ -632,10 +737,10 @@ export default function CreatePage() {
                               <Sparkles className="w-16 h-16 text-white mx-auto drop-shadow-lg" />
                             </div>
                             <p className="text-white font-semibold text-lg drop-shadow-lg">
-                              Creating your image
+                              Creating Magic...
                             </p>
                             <p className="text-white/90 text-sm mt-2 drop-shadow-lg">
-                              Please wait a moment (or two)
+                              This may take ~30 seconds
                             </p>
                           </div>
                           
@@ -653,11 +758,33 @@ export default function CreatePage() {
                         </div>
                       </div>
                     ) : generatedImage ? (
-                      <img
-                        src={generatedImage}
-                        alt="Generated"
-                        className="w-full h-full object-contain"
-                      />
+                      <div className="relative w-full h-full">
+                        <img
+                          src={generatedImage}
+                          alt="Generated"
+                          className={`w-full h-full object-contain ${showReveal ? 'reveal-image' : ''}`}
+                        />
+                        {showReveal && (
+                          <>
+                            <div className="reveal-curtain"></div>
+                            <div className="shimmer-overlay"></div>
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                              <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                              <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                              <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                              <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                              <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                              <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                              <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                              <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                              <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                              <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                              <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                              <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     ) : (
                       <div className="text-center text-muted-foreground">
                         <Sparkles className="w-12 h-12 mx-auto mb-4 opacity-50" />
