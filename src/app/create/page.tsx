@@ -635,7 +635,7 @@ export default function CreatePage() {
                               Creating your image
                             </p>
                             <p className="text-white/90 text-sm mt-2 drop-shadow-lg">
-                              This may take ~30 seconds
+                              Please wait a moment (or two)
                             </p>
                           </div>
                           
