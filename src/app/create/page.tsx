@@ -300,15 +300,21 @@ export default function CreatePage() {
       <Navbar />
 
       <style jsx>{`
-        @keyframes rainbow-gradient {
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes rainbow-scroll {
           0% {
             background-position: 0% 50%;
           }
-          50% {
-            background-position: 100% 50%;
-          }
           100% {
-            background-position: 0% 50%;
+            background-position: 200% 50%;
           }
         }
 
@@ -334,88 +340,109 @@ export default function CreatePage() {
 
         @keyframes pulse-glow {
           0%, 100% {
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3),
-                        0 0 40px rgba(255, 0, 255, 0.2),
-                        0 0 60px rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(255, 182, 193, 0.4),
+                        0 0 40px rgba(221, 160, 221, 0.3),
+                        0 0 60px rgba(173, 216, 230, 0.3);
           }
           50% {
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.5),
-                        0 0 60px rgba(255, 0, 255, 0.4),
-                        0 0 90px rgba(0, 255, 255, 0.4);
+            box-shadow: 0 0 30px rgba(255, 182, 193, 0.6),
+                        0 0 60px rgba(221, 160, 221, 0.5),
+                        0 0 90px rgba(173, 216, 230, 0.5);
           }
         }
 
-        .rainbow-gradient-bg {
+        .pastel-rainbow-gradient-bg {
           background: linear-gradient(
-            45deg,
-            #ff0000,
-            #ff7f00,
-            #ffff00,
-            #00ff00,
-            #0000ff,
-            #4b0082,
-            #9400d3,
-            #ff0000
+            90deg,
+            #FFB6C1,
+            #FFD4B2,
+            #FFF4A3,
+            #B4E7CE,
+            #AED8E6,
+            #C5B4E3,
+            #E6B4D0,
+            #FFB6C1,
+            #FFD4B2,
+            #FFF4A3,
+            #B4E7CE,
+            #AED8E6,
+            #C5B4E3,
+            #E6B4D0,
+            #FFB6C1
           );
-          background-size: 400% 400%;
-          animation: rainbow-gradient 3s ease infinite;
+          background-size: 200% 100%;
+          animation: fadeIn 0.8s ease-in, rainbow-scroll 8s linear infinite;
+          animation-delay: 0s, 0.8s;
         }
 
         .sparkle {
           position: absolute;
-          width: 4px;
-          height: 4px;
+          width: 6px;
+          height: 6px;
           background: white;
           border-radius: 50%;
+          box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
           animation: sparkle 2s ease-in-out infinite;
         }
 
         .sparkle:nth-child(1) {
-          top: 20%;
+          top: 15%;
           left: 20%;
           animation-delay: 0s;
         }
 
         .sparkle:nth-child(2) {
-          top: 40%;
+          top: 35%;
           left: 80%;
-          animation-delay: 0.3s;
+          animation-delay: 0.4s;
         }
 
         .sparkle:nth-child(3) {
-          top: 60%;
-          left: 30%;
-          animation-delay: 0.6s;
+          top: 55%;
+          left: 25%;
+          animation-delay: 0.8s;
         }
 
         .sparkle:nth-child(4) {
-          top: 80%;
-          left: 70%;
-          animation-delay: 0.9s;
-        }
-
-        .sparkle:nth-child(5) {
-          top: 30%;
-          left: 50%;
+          top: 75%;
+          left: 75%;
           animation-delay: 1.2s;
         }
 
+        .sparkle:nth-child(5) {
+          top: 25%;
+          left: 50%;
+          animation-delay: 1.6s;
+        }
+
         .sparkle:nth-child(6) {
-          top: 70%;
-          left: 60%;
-          animation-delay: 1.5s;
+          top: 65%;
+          left: 55%;
+          animation-delay: 0.2s;
         }
 
         .sparkle:nth-child(7) {
-          top: 50%;
-          left: 15%;
-          animation-delay: 1.8s;
+          top: 45%;
+          left: 10%;
+          animation-delay: 0.6s;
         }
 
         .sparkle:nth-child(8) {
-          top: 25%;
+          top: 20%;
+          left: 90%;
+          animation-delay: 1.0s;
+        }
+
+        .sparkle:nth-child(9) {
+          top: 85%;
+          left: 40%;
+          animation-delay: 1.4s;
+        }
+
+        .sparkle:nth-child(10) {
+          top: 60%;
           left: 85%;
-          animation-delay: 2.1s;
+          animation-delay: 1.8s;
         }
 
         .float-animation {
@@ -598,7 +625,7 @@ export default function CreatePage() {
                 <CardContent>
                   <div className="aspect-square bg-muted rounded-lg flex items-center justify-center overflow-hidden relative">
                     {isGenerating ? (
-                      <div className="absolute inset-0 rainbow-gradient-bg pulse-glow rounded-lg">
+                      <div className="absolute inset-0 pastel-rainbow-gradient-bg pulse-glow rounded-lg">
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="text-center z-10">
                             <div className="float-animation mb-4">
@@ -613,6 +640,8 @@ export default function CreatePage() {
                           </div>
                           
                           {/* Sparkles */}
+                          <div className="sparkle"></div>
+                          <div className="sparkle"></div>
                           <div className="sparkle"></div>
                           <div className="sparkle"></div>
                           <div className="sparkle"></div>
