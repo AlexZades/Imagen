@@ -110,10 +110,12 @@ export default function AdminPage() {
       const tagsData = await tagsRes.json();
       const stylesData = await stylesRes.json();
 
-      setTags(tagsData.tags);
-      setStyles(stylesData.styles);
+      setTags(tagsData.tags || []);
+      setStyles(stylesData.styles || []);
     } catch (error) {
       toast.error('Failed to load data');
+      setTags([]);
+      setStyles([]);
     } finally {
       setIsLoading(false);
     }
@@ -565,7 +567,14 @@ export default function AdminPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {tags.map((tag) => (
+                    {tags.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                          No tags found. Create your first tag to get started.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      tags.map((tag) => (
                       <TableRow key={tag.id}>
                         {editingTagId === tag.id ? (
                           <>
@@ -811,7 +820,14 @@ export default function AdminPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {styles.map((style) => (
+                    {styles.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                          No styles found. Create your first style to get started.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      styles.map((style) => (
                       <TableRow key={style.id}>
                         {editingStyleId === style.id ? (
                           <>
