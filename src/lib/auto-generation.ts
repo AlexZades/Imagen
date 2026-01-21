@@ -56,6 +56,8 @@ export interface UserPreferenceProfile {
     tags: Array<{ id: string; name: string; loras?: string[]; minStrength?: number; maxStrength?: number }>;
     style: { id: string; name: string; checkpointName?: string } | null;
     simpleTags: string[];
+    width: number;
+    height: number;
   }>;
   tagFrequency: Map<string, number>;
   styleFrequency: Map<string, number>;
@@ -74,6 +76,7 @@ export interface GenerationResult {
   prompt: string;
   tags: string[];
   style: string;
+  aspectRatio: number;
 }
 
 export interface GenerationReport {
@@ -232,6 +235,17 @@ async function getAvailableSimpleTags(): Promise<string[]> {
   }
 }
 
+// ==================== Aspect Ratio Utilities ====================
+
+function getAspectRatioFromDimensions(width: number, height: number): number {
+  if (!width || !height) return 1;
+  const ratio = width / height;
+  if (ratio >= 1.6) return 4; // Wide Landscape
+  if (ratio >= 1.2) return 3; // Landscape
+  if (ratio <= 0.8) return 2; // Portrait
+  return 1; // Square
+}
+
 // ==================== User Preference Profile Builder ====================
 
 export async function buildUserPreferenceProfile(userId: string): Promise<UserPreferenceProfile | null> {
@@ -282,6 +296,8 @@ export async function buildUserPreferenceProfile(userId: string): Promise<UserPr
       simpleTags: like.image.promptTags
         ? like.image.promptTags.split(',').map((t: string) => t.trim()).filter((t: string) => t.length > 0)
         : [],
+      width: like.image.width || 1024,
+      height: like.image.height || 1024,
     }));
 
     const tagFrequency = new Map<string, number>();
@@ -405,7 +421,7 @@ async function generateCloseRecommendation(
   config: GenerationConfig,
   allTags: Tag[],
   allStyles: Style[]
-): Promise<{ tags: Tag[]; style: Style; simpleTags: string[]; loraWeights: number[] }> {
+): Promise<{ tags: Tag[]; style: Style; simpleTags: string[]; loraWeights: number[]; aspectRatio: number }> {
   const baseImage = randomChoice(profile.likedImages);
   
   let selectedTags = [...baseImage.tags] as Tag[];
@@ -458,12 +474,14 @@ async function generateCloseRecommendation(
   }
   
   const loraWeights = calculateLoraWeights(selectedTags, config, 0.3);
+  const aspectRatio = getAspectRatioFromDimensions(baseImage.width, baseImage.height);
   
   return {
     tags: selectedTags,
     style: selectedStyle,
     simpleTags: selectedSimpleTags,
     loraWeights,
+    aspectRatio,
   };
 }
 
@@ -472,7 +490,7 @@ async function generateMixedRecommendation(
   config: GenerationConfig,
   allTags: Tag[],
   allStyles: Style[]
-): Promise<{ tags: Tag[]; style: Style; simpleTags: string[]; loraWeights: number[] }> {
+): Promise<{ tags: Tag[]; style: Style; simpleTags: string[]; loraWeights: number[]; aspectRatio: number }> {
   const poolSize = Math.min(config.mixedPoolSize, profile.likedImages.length);
   const sourceImages = randomChoices(profile.likedImages, poolSize);
   
@@ -507,12 +525,14 @@ async function generateMixedRecommendation(
   }
   
   const loraWeights = calculateLoraWeights(selectedTags, config, 0.6);
+  const aspectRatio = randomInt(1, 4);
   
   return {
     tags: selectedTags,
     style: selectedStyle,
     simpleTags: selectedSimpleTags,
     loraWeights,
+    aspectRatio,
   };
 }
 
@@ -520,7 +540,7 @@ async function generateRandomImage(
   config: GenerationConfig,
   allTags: Tag[],
   allStyles: Style[]
-): Promise<{ tags: Tag[]; style: Style; simpleTags: string[]; loraWeights: number[] }> {
+): Promise<{ tags: Tag[]; style: Style; simpleTags: string[]; loraWeights: number[]; aspectRatio: number }> {
   const useMultipleTags = rollDice(config.multiTagProbability);
   const numTags = useMultipleTags
     ? randomInt(2, Math.min(config.maxTagsPerImage, 4))
@@ -536,12 +556,14 @@ async function generateRandomImage(
   const selectedSimpleTags = randomChoices(availableSimpleTags, numSimpleTags);
 
   const loraWeights = calculateLoraWeights(selectedTags, config, 1.0);
+  const aspectRatio = randomInt(1, 4);
 
   return {
     tags: selectedTags,
     style: selectedStyle,
     simpleTags: selectedSimpleTags,
     loraWeights,
+    aspectRatio,
   };
 }
 
@@ -551,16 +573,43 @@ async function callComfyUIAPI(
   promptTags: string,
   modelName: string,
   loraNames: string[],
-  loraWeights: number[]
+  loraWeights: number[],
+  aspectRatio: number = 1
 ): Promise<string> {
   const comfyuiUrl = process.env.COMFYUI_API_URL;
   if (!comfyuiUrl) {
     throw new Error('COMFYUI_API_URL environment variable not set');
   }
 
+  // Determine dimensions based on aspect ratio
+  let width = 1024;
+  let height = 1024;
+
+  switch (aspectRatio) {
+    case 2: // Portrait 3:4
+      width = 896;
+      height = 1152;
+      break;
+    case 3: // Landscape 4:3
+      width = 1152;
+      height = 896;
+      break;
+    case 4: // Landscape Wide 16:9
+      width = 1344;
+      height = 768;
+      break;
+    case 1: // Square 1:1
+    default:
+      width = 1024;
+      height = 1024;
+      break;
+  }
+
   const requestBody: any = {
     prompt_tags: promptTags,
     model_name: modelName,
+    width,
+    height,
   };
 
   if (loraNames.length > 0) {
@@ -684,7 +733,7 @@ export async function generateImagesForUser(
     if (profile && profile.likedImages.length >= 2) {
       for (let i = 0; i < config.closeRecommendationsCount; i++) {
         try {
-          const { tags, style, simpleTags, loraWeights } = await generateCloseRecommendation(
+          const { tags, style, simpleTags, loraWeights, aspectRatio } = await generateCloseRecommendation(
             profile,
             config,
             allTags,
@@ -706,7 +755,8 @@ export async function generateImagesForUser(
             fullPrompt,
             style.checkpointName!,
             loraNames.slice(0, 4),
-            loraWeights.slice(0, 4)
+            loraWeights.slice(0, 4),
+            aspectRatio
           );
 
           const imageId = await saveGeneratedImage(
@@ -727,6 +777,7 @@ export async function generateImagesForUser(
             prompt: fullPrompt,
             tags: tags.map((t: Tag) => t.name),
             style: style.name,
+            aspectRatio,
           });
         } catch (error: any) {
           console.error(`Error generating close recommendation ${i + 1}:`, error);
@@ -738,6 +789,7 @@ export async function generateImagesForUser(
             prompt: '',
             tags: [],
             style: '',
+            aspectRatio: 1,
           });
         }
       }
@@ -746,7 +798,7 @@ export async function generateImagesForUser(
     if (profile && profile.likedImages.length >= 2) {
       for (let i = 0; i < config.mixedRecommendationsCount; i++) {
         try {
-          const { tags, style, simpleTags, loraWeights } = await generateMixedRecommendation(
+          const { tags, style, simpleTags, loraWeights, aspectRatio } = await generateMixedRecommendation(
             profile,
             config,
             allTags,
@@ -768,7 +820,8 @@ export async function generateImagesForUser(
             fullPrompt,
             style.checkpointName!,
             loraNames.slice(0, 4),
-            loraWeights.slice(0, 4)
+            loraWeights.slice(0, 4),
+            aspectRatio
           );
 
           const imageId = await saveGeneratedImage(
@@ -789,6 +842,7 @@ export async function generateImagesForUser(
             prompt: fullPrompt,
             tags: tags.map((t: Tag) => t.name),
             style: style.name,
+            aspectRatio,
           });
         } catch (error: any) {
           console.error(`Error generating mixed recommendation ${i + 1}:`, error);
@@ -800,6 +854,7 @@ export async function generateImagesForUser(
             prompt: '',
             tags: [],
             style: '',
+            aspectRatio: 1,
           });
         }
       }
@@ -807,7 +862,7 @@ export async function generateImagesForUser(
 
     for (let i = 0; i < config.randomCount; i++) {
       try {
-        const { tags, style, simpleTags, loraWeights } = await generateRandomImage(
+        const { tags, style, simpleTags, loraWeights, aspectRatio } = await generateRandomImage(
           config,
           allTags,
           allStyles
@@ -828,7 +883,8 @@ export async function generateImagesForUser(
           fullPrompt,
           style.checkpointName!,
           loraNames.slice(0, 4),
-          loraWeights.slice(0, 4)
+          loraWeights.slice(0, 4),
+          aspectRatio
         );
 
         const imageId = await saveGeneratedImage(
@@ -849,6 +905,7 @@ export async function generateImagesForUser(
           prompt: fullPrompt,
           tags: tags.map((t: Tag) => t.name),
           style: style.name,
+          aspectRatio,
         });
       } catch (error: any) {
         console.error(`Error generating random image ${i + 1}:`, error);
@@ -860,6 +917,7 @@ export async function generateImagesForUser(
           prompt: '',
           tags: [],
           style: '',
+          aspectRatio: 1,
         });
       }
     }
@@ -874,6 +932,7 @@ export async function generateImagesForUser(
       prompt: '',
       tags: [],
       style: '',
+      aspectRatio: 1,
     });
   }
 
