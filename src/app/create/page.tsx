@@ -42,6 +42,7 @@ export default function CreatePage() {
   const [styles, setStyles] = useState<Style[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [selectedStyle, setSelectedStyle] = useState<string>('');
+  const [aspectRatio, setAspectRatio] = useState<string>('1');
   const [promptTags, setPromptTags] = useState('');
   const [loraConfigs, setLoraConfigs] = useState<LoraConfig[]>([]);
   const [title, setTitle] = useState('');
@@ -192,6 +193,7 @@ export default function CreatePage() {
           model_name: selectedStyleObj.checkpointName,
           lora_names: loraNames.length > 0 ? loraNames : undefined,
           lora_weights: loraWeights.length > 0 ? loraWeights : undefined,
+          aspect: parseInt(aspectRatio),
         }),
       });
 
@@ -610,6 +612,25 @@ export default function CreatePage() {
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="aspect">Aspect Ratio</Label>
+                    <Select
+                      value={aspectRatio}
+                      onValueChange={setAspectRatio}
+                      disabled={isGenerating}
+                    >
+                      <SelectTrigger id="aspect">
+                        <SelectValue placeholder="Select aspect ratio" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Square (1:1)</SelectItem>
+                        <SelectItem value="2">Portrait (3:4)</SelectItem>
+                        <SelectItem value="3">Landscape (4:3)</SelectItem>
+                        <SelectItem value="4">Landscape Wide (16:9)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label>Tags (Optional) - Max 4</Label>
                     <Select 
                       value="" 
@@ -737,7 +758,12 @@ export default function CreatePage() {
                   <CardDescription>Your generated image will appear here</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="aspect-square bg-muted rounded-lg flex items-center justify-center overflow-hidden relative">
+                  <div className={`bg-muted rounded-lg flex items-center justify-center overflow-hidden relative transition-all duration-300 ${
+                    aspectRatio === '1' ? 'aspect-square' :
+                    aspectRatio === '2' ? 'aspect-[3/4]' :
+                    aspectRatio === '3' ? 'aspect-[4/3]' :
+                    'aspect-[16/9]'
+                  }`}>
                     {isGenerating ? (
                       <div className="absolute inset-0 pastel-rainbow-gradient-bg pulse-glow rounded-lg">
                         <div className="absolute inset-0 flex items-center justify-center">
