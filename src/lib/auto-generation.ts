@@ -581,35 +581,10 @@ async function callComfyUIAPI(
     throw new Error('COMFYUI_API_URL environment variable not set');
   }
 
-  // Determine dimensions based on aspect ratio
-  let width = 1024;
-  let height = 1024;
-
-  switch (aspectRatio) {
-    case 2: // Portrait 3:4
-      width = 896;
-      height = 1152;
-      break;
-    case 3: // Landscape 4:3
-      width = 1152;
-      height = 896;
-      break;
-    case 4: // Landscape Wide 16:9
-      width = 1344;
-      height = 768;
-      break;
-    case 1: // Square 1:1
-    default:
-      width = 1024;
-      height = 1024;
-      break;
-  }
-
   const requestBody: any = {
     prompt_tags: promptTags,
     model_name: modelName,
-    width,
-    height,
+    aspect: aspectRatio,
   };
 
   if (loraNames.length > 0) {

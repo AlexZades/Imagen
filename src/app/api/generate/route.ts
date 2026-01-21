@@ -11,30 +11,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Determine dimensions based on aspect ratio
-    let width = 1024;
-    let height = 1024;
-
-    switch (Number(aspect)) {
-      case 2: // Portrait 3:4
-        width = 896;
-        height = 1152;
-        break;
-      case 3: // Landscape 4:3
-        width = 1152;
-        height = 896;
-        break;
-      case 4: // Landscape Wide 16:9
-        width = 1344;
-        height = 768;
-        break;
-      case 1: // Square 1:1
-      default:
-        width = 1024;
-        height = 1024;
-        break;
-    }
-
     const comfyuiUrl = process.env.COMFYUI_API_URL;
     if (!comfyuiUrl) {
       return NextResponse.json(
@@ -49,8 +25,7 @@ export async function POST(request: NextRequest) {
     const requestBody: any = {
       prompt_tags,
       model_name,
-      width,
-      height,
+      aspect: aspect || 1, // Default to square if not provided
     };
 
     // Handle multiple LoRAs (up to 4)
