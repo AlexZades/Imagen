@@ -13,14 +13,14 @@ services:
     
     # Use host network mode for TrueNAS Scale
     # Comment out the next line and uncomment 'ports' if you prefer bridge mode
-    network_mode: host
+    # network_mode: host
     
     # Uncomment for bridge mode (default Docker networking)
-    # ports:
-    #   - "4144:4144"
+    ports:
+      - "4144:4144"
     
     volumes:
-      - X:/Services/Imagen/Imagen:/app/public/uploads
+      - ./uploads:/app/public/uploads
 
     environment:
       - NODE_ENV=production
