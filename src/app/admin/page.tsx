@@ -575,167 +575,168 @@ export default function AdminPage() {
                       </TableRow>
                     ) : (
                       tags.map((tag) => (
-                      <TableRow key={tag.id}>
-                        {editingTagId === tag.id ? (
-                          <>
-                            <TableCell>
-                              <Input
-                                value={editTagData.name || ''}
-                                onChange={(e) =>
-                                  setEditTagData({ ...editTagData, name: e.target.value })
-                                }
-                                className="max-w-xs"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <div className="space-y-2">
-                                <div className="flex gap-2">
+                        <TableRow key={tag.id}>
+                          {editingTagId === tag.id ? (
+                            <>
+                              <TableCell>
+                                <Input
+                                  value={editTagData.name || ''}
+                                  onChange={(e) =>
+                                    setEditTagData({ ...editTagData, name: e.target.value })
+                                  }
+                                  className="max-w-xs"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <div className="space-y-2">
+                                  <div className="flex gap-2">
+                                    <Input
+                                      value={newLora}
+                                      onChange={(e) => setNewLora(e.target.value)}
+                                      placeholder="Add LoRA..."
+                                      className="max-w-xs"
+                                      onKeyPress={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.preventDefault();
+                                          handleAddLora();
+                                        }
+                                      }}
+                                    />
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={handleAddLora}
+                                    >
+                                      <Plus className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1">
+                                    {editTagData.loras?.map((lora, idx) => (
+                                      <Badge key={idx} variant="secondary" className="gap-1">
+                                        {lora}
+                                        <X
+                                          className="w-3 h-3 cursor-pointer"
+                                          onClick={() => handleRemoveLora(lora)}
+                                        />
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-2 items-center">
                                   <Input
-                                    value={newLora}
-                                    onChange={(e) => setNewLora(e.target.value)}
-                                    placeholder="Add LoRA..."
-                                    className="max-w-xs"
-                                    onKeyPress={(e) => {
-                                      if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                        handleAddLora();
-                                      }
-                                    }}
+                                    type="number"
+                                    step="0.1"
+                                    value={editTagData.minStrength ?? ''}
+                                    onChange={(e) =>
+                                      setEditTagData({
+                                        ...editTagData,
+                                        minStrength: e.target.value ? parseFloat(e.target.value) : undefined,
+                                      })
+                                    }
+                                    className="max-w-[80px]"
+                                    placeholder="1.0"
                                   />
+                                  <span className="text-muted-foreground">-</span>
+                                  <Input
+                                    type="number"
+                                    step="0.1"
+                                    value={editTagData.maxStrength ?? ''}
+                                    onChange={(e) =>
+                                      setEditTagData({
+                                        ...editTagData,
+                                        maxStrength: e.target.value ? parseFloat(e.target.value) : undefined,
+                                      })
+                                    }
+                                    className="max-w-[80px]"
+                                    placeholder="1.0"
+                                  />
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  value={editTagData.forcedPromptTags || ''}
+                                  onChange={(e) =>
+                                    setEditTagData({ ...editTagData, forcedPromptTags: e.target.value })
+                                  }
+                                  className="max-w-xs"
+                                  placeholder="tag1, tag2"
+                                />
+                              </TableCell>
+                              <TableCell>{tag.usageCount}</TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
                                   <Button
-                                    type="button"
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => saveTag(tag.id)}
+                                  >
+                                    <Save className="w-4 h-4" />
+                                  </Button>
+                                  <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={handleAddLora}
+                                    onClick={cancelEditingTag}
                                   >
-                                    <Plus className="w-4 h-4" />
+                                    Cancel
                                   </Button>
                                 </div>
-                                <div className="flex flex-wrap gap-1">
-                                  {editTagData.loras?.map((lora, idx) => (
-                                    <Badge key={idx} variant="secondary" className="gap-1">
-                                      {lora}
-                                      <X
-                                        className="w-3 h-3 cursor-pointer"
-                                        onClick={() => handleRemoveLora(lora)}
-                                      />
-                                    </Badge>
-                                  ))}
+                              </TableCell>
+                            </>
+                          ) : (
+                            <>
+                              <TableCell className="font-medium">{tag.name}</TableCell>
+                              <TableCell>
+                                {tag.loras && tag.loras.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {tag.loras.map((lora, idx) => (
+                                      <Badge key={idx} variant="secondary" className="text-xs">
+                                        {lora}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">None</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm">
+                                  {tag.minStrength !== undefined ? tag.minStrength : '-'} - {tag.maxStrength !== undefined ? tag.maxStrength : '-'}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                {tag.forcedPromptTags ? (
+                                  <span className="text-sm">{tag.forcedPromptTags}</span>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">None</span>
+                                )}
+                              </TableCell>
+                              <TableCell>{tag.usageCount}</TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => startEditingTag(tag)}
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => deleteTag(tag.id)}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
                                 </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-2 items-center">
-                                <Input
-                                  type="number"
-                                  step="0.1"
-                                  value={editTagData.minStrength ?? ''}
-                                  onChange={(e) =>
-                                    setEditTagData({
-                                      ...editTagData,
-                                      minStrength: e.target.value ? parseFloat(e.target.value) : undefined,
-                                    })
-                                  }
-                                  className="max-w-[80px]"
-                                  placeholder="1.0"
-                                />
-                                <span className="text-muted-foreground">-</span>
-                                <Input
-                                  type="number"
-                                  step="0.1"
-                                  value={editTagData.maxStrength ?? ''}
-                                  onChange={(e) =>
-                                    setEditTagData({
-                                      ...editTagData,
-                                      maxStrength: e.target.value ? parseFloat(e.target.value) : undefined,
-                                    })
-                                  }
-                                  className="max-w-[80px]"
-                                  placeholder="1.0"
-                                />
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                value={editTagData.forcedPromptTags || ''}
-                                onChange={(e) =>
-                                  setEditTagData({ ...editTagData, forcedPromptTags: e.target.value })
-                                }
-                                className="max-w-xs"
-                                placeholder="tag1, tag2"
-                              />
-                            </TableCell>
-                            <TableCell>{tag.usageCount}</TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="default"
-                                  onClick={() => saveTag(tag.id)}
-                                >
-                                  <Save className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={cancelEditingTag}
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </>
-                        ) : (
-                          <>
-                            <TableCell className="font-medium">{tag.name}</TableCell>
-                            <TableCell>
-                              {tag.loras && tag.loras.length > 0 ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {tag.loras.map((lora, idx) => (
-                                    <Badge key={idx} variant="secondary" className="text-xs">
-                                      {lora}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-muted-foreground text-sm">None</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-sm">
-                                {tag.minStrength !== undefined ? tag.minStrength : '-'} - {tag.maxStrength !== undefined ? tag.maxStrength : '-'}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              {tag.forcedPromptTags ? (
-                                <span className="text-sm">{tag.forcedPromptTags}</span>
-                              ) : (
-                                <span className="text-muted-foreground text-sm">None</span>
-                              )}
-                            </TableCell>
-                            <TableCell>{tag.usageCount}</TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => startEditingTag(tag)}
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() => deleteTag(tag.id)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </>
-                        )}
-                      </TableRow>
-                    ))}
+                              </TableCell>
+                            </>
+                          )}
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -828,100 +829,101 @@ export default function AdminPage() {
                       </TableRow>
                     ) : (
                       styles.map((style) => (
-                      <TableRow key={style.id}>
-                        {editingStyleId === style.id ? (
-                          <>
-                            <TableCell>
-                              <Input
-                                value={editStyleData.name || ''}
-                                onChange={(e) =>
-                                  setEditStyleData({ ...editStyleData, name: e.target.value })
-                                }
-                                className="max-w-xs"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Textarea
-                                value={editStyleData.description || ''}
-                                onChange={(e) =>
-                                  setEditStyleData({ ...editStyleData, description: e.target.value })
-                                }
-                                className="max-w-md"
-                                rows={2}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                value={editStyleData.checkpointName || ''}
-                                onChange={(e) =>
-                                  setEditStyleData({ ...editStyleData, checkpointName: e.target.value })
-                                }
-                                className="max-w-xs"
-                                placeholder="model_name.safetensors"
-                              />
-                            </TableCell>
-                            <TableCell>{style.usageCount}</TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="default"
-                                  onClick={() => saveStyle(style.id)}
-                                >
-                                  <Save className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={cancelEditingStyle}
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </>
-                        ) : (
-                          <>
-                            <TableCell className="font-medium">{style.name}</TableCell>
-                            <TableCell>
-                              {style.description ? (
-                                <span className="text-sm">{style.description}</span>
-                              ) : (
-                                <span className="text-muted-foreground text-sm">No description</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {style.checkpointName ? (
-                                <code className="text-xs bg-muted px-2 py-1 rounded">
-                                  {style.checkpointName}
-                                </code>
-                              ) : (
-                                <span className="text-muted-foreground text-sm">Not set</span>
-                              )}
-                            </TableCell>
-                            <TableCell>{style.usageCount}</TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => startEditingStyle(style)}
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() => deleteStyle(style.id)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </>
-                        )}
-                      </TableRow>
-                    ))}
+                        <TableRow key={style.id}>
+                          {editingStyleId === style.id ? (
+                            <>
+                              <TableCell>
+                                <Input
+                                  value={editStyleData.name || ''}
+                                  onChange={(e) =>
+                                    setEditStyleData({ ...editStyleData, name: e.target.value })
+                                  }
+                                  className="max-w-xs"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Textarea
+                                  value={editStyleData.description || ''}
+                                  onChange={(e) =>
+                                    setEditStyleData({ ...editStyleData, description: e.target.value })
+                                  }
+                                  className="max-w-md"
+                                  rows={2}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  value={editStyleData.checkpointName || ''}
+                                  onChange={(e) =>
+                                    setEditStyleData({ ...editStyleData, checkpointName: e.target.value })
+                                  }
+                                  className="max-w-xs"
+                                  placeholder="model_name.safetensors"
+                                />
+                              </TableCell>
+                              <TableCell>{style.usageCount}</TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => saveStyle(style.id)}
+                                  >
+                                    <Save className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={cancelEditingStyle}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </>
+                          ) : (
+                            <>
+                              <TableCell className="font-medium">{style.name}</TableCell>
+                              <TableCell>
+                                {style.description ? (
+                                  <span className="text-sm">{style.description}</span>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">No description</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {style.checkpointName ? (
+                                  <code className="text-xs bg-muted px-2 py-1 rounded">
+                                    {style.checkpointName}
+                                  </code>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">Not set</span>
+                                )}
+                              </TableCell>
+                              <TableCell>{style.usageCount}</TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => startEditingStyle(style)}
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => deleteStyle(style.id)}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </>
+                          )}
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
