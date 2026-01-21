@@ -151,3 +151,32 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes rainbow-border {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-rainbow-border {
+  background: linear-gradient(
+    60deg,
+    #ffadad,
+    #ffd6a5,
+    #fdffb6,
+    #caffbf,
+    #9bf6ff,
+    #a0c4ff,
+    #bdb2ff,
+    #ffc6ff,
+    #ffadad
+  );
+  background-size: 300% 300%;
+  animation: rainbow-border 4s ease infinite;
+}
