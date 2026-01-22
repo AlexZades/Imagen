@@ -4,6 +4,22 @@ const nextConfig: NextConfig = {
   // Enable standalone output for Docker
   output: 'standalone',
   
+  // Configure remote image patterns for S3/SeaweedFS storage
+  images: {
+    remotePatterns: [
+      // Allow images from any S3-compatible storage
+      // The actual endpoint is configured via environment variables
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
+  },
+  
   // Fix chunk loading issues
   webpack: (config, { dev, isServer }) => {
     // Fix for chunk loading timeout issues in development
