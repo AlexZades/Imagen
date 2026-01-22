@@ -33,6 +33,7 @@ import { AutoGenerationTest } from '@/components/admin/auto-generation-test';
 import { SimpleTagsViewer } from '@/components/admin/simple-tags-viewer';
 import { FallbackTagsEditor } from '@/components/admin/fallback-tags-editor';
 import { GenerationSettings } from '@/components/admin/generation-settings';
+import { StorageMigration } from '@/components/admin/storage-migration';
 import { toast } from 'sonner';
 import { Edit, Trash2, Plus, X, Save, Settings, Wrench } from 'lucide-react';
 
@@ -964,6 +965,8 @@ export default function AdminPage() {
                       )}
                     </Button>
                   </div>
+
+                  <StorageMigration userId={user.id} />
                 </div>
               </CardContent>
             </Card>
