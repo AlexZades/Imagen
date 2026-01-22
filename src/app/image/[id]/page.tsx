@@ -30,7 +30,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Heart, ThumbsDown, Eye, User as UserIcon, Calendar, Maximize2, Palette, Edit, Trash2, Save, Wand2 } from 'lucide-react';
+import { Heart, ThumbsDown, Eye, User as UserIcon, Calendar, Maximize2, Palette, Edit, Trash2, Save, RefreshCw } from 'lucide-react';
 
 interface Image {
   id: string;
@@ -346,9 +346,9 @@ export default function ImageDetailPage() {
               <Button
                 variant="outline"
                 onClick={handleRemix}
-                className="gap-2"
+                className="gap-2 animate-blue-glow-border border-2 font-medium"
               >
-                <Wand2 className="w-4 h-4" />
+                <RefreshCw className="w-4 h-4" />
                 Remix
               </Button>
 
