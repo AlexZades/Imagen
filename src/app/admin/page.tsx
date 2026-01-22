@@ -32,6 +32,7 @@ import { TestGenerator } from '@/components/admin/test-generator';
 import { AutoGenerationTest } from '@/components/admin/auto-generation-test';
 import { SimpleTagsViewer } from '@/components/admin/simple-tags-viewer';
 import { FallbackTagsEditor } from '@/components/admin/fallback-tags-editor';
+import { SpeechBubbleTriggersEditor } from '@/components/admin/speech-bubble-triggers-editor';
 import { GenerationSettings } from '@/components/admin/generation-settings';
 import { StorageMigration } from '@/components/admin/storage-migration';
 import { toast } from 'sonner';
@@ -438,7 +439,10 @@ export default function AdminPage() {
           </TabsContent>
 
           <TabsContent value="fallback-tags" className="mt-6">
-            <FallbackTagsEditor />
+            <div className="space-y-6">
+                <FallbackTagsEditor />
+                <SpeechBubbleTriggersEditor />
+            </div>
           </TabsContent>
 
           <TabsContent value="tags" className="mt-6">

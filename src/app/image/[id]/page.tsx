@@ -87,6 +87,7 @@ export default function ImageDetailPage() {
   const [userLikeStatus, setUserLikeStatus] = useState<boolean | null>(null);
   const [similarImages, setSimilarImages] = useState<Image[]>([]);
   const [loadingSimilar, setLoadingSimilar] = useState(false);
+  const [speechBubbleTriggers, setSpeechBubbleTriggers] = useState<string[]>([]);
 
   // Edit state
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -102,11 +103,30 @@ export default function ImageDetailPage() {
   useEffect(() => {
     if (imageId) {
       fetchImage();
+      fetchBubbleTriggers();
       if (user) {
         fetchLikeStatus();
       }
     }
   }, [imageId, user]);
+
+  const fetchBubbleTriggers = async () => {
+    try {
+      const response = await fetch('/api/generation-config?key=speech_bubble_triggers');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.value) {
+          setSpeechBubbleTriggers(
+            data.value.split(',').map((t: string) => t.trim().toLowerCase()).filter(Boolean)
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch bubble triggers', error);
+      // Fallback
+      setSpeechBubbleTriggers(['speech bubble', 'speech_bubble', 'speech-bubble', 'dialogue', 'text', 'comic', 'manga']);
+    }
+  };
 
   useEffect(() => {
     if (imageId && image) {
@@ -309,9 +329,10 @@ export default function ImageDetailPage() {
   const isOwner = user && user.id === image.userId;
 
   // Check if image has speech bubble related tags
-  const hasSpeechBubbles = 
-    simpleTags.some(t => ['speech bubble', 'speech_bubble', 'speech-bubble', 'dialogue', 'text', 'comic', 'manga'].some(k => t.toLowerCase().includes(k))) ||
-    tags.some(t => ['speech bubble', 'speech_bubble', 'speech-bubble', 'dialogue', 'text', 'comic', 'manga'].some(k => t.name.toLowerCase().includes(k)));
+  const hasSpeechBubbles = speechBubbleTriggers.length > 0 && (
+    simpleTags.some(t => speechBubbleTriggers.some(trigger => t.toLowerCase().includes(trigger))) ||
+    tags.some(t => speechBubbleTriggers.some(trigger => t.name.toLowerCase().includes(trigger)))
+  );
 
   return (
     <div className="min-h-screen flex flex-col">

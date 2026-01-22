@@ -8,6 +8,11 @@ const DEFAULT_FALLBACK_TAGS = [
   'detailed', 'high quality', 'masterpiece',
 ];
 
+const DEFAULT_SPEECH_BUBBLE_TRIGGERS = [
+  'speech bubble', 'speech_bubble', 'speech-bubble', 
+  'dialogue', 'text', 'comic', 'manga'
+];
+
 interface GenerationConfig {
   id: string;
   key: string;
@@ -35,6 +40,15 @@ export async function GET(request: NextRequest) {
             value: DEFAULT_FALLBACK_TAGS.join(', '),
           });
         }
+        
+        // Return default for speech_bubble_triggers
+        if (key === 'speech_bubble_triggers') {
+          return NextResponse.json({
+            key: 'speech_bubble_triggers',
+            value: DEFAULT_SPEECH_BUBBLE_TRIGGERS.join(', '),
+          });
+        }
+
         return NextResponse.json({ message: 'Config not found' }, { status: 404 });
       }
 
@@ -55,7 +69,19 @@ export async function GET(request: NextRequest) {
         };
       }
 
-      return NextResponse.json({ configs: [...configs, fallbackTags] });
+      // Ensure speech_bubble_triggers exists
+      let bubbleTriggers = configs.find((c: GenerationConfig) => c.key === 'speech_bubble_triggers');
+      if (!bubbleTriggers) {
+        bubbleTriggers = {
+          id: 'default-bubbles',
+          key: 'speech_bubble_triggers',
+          value: DEFAULT_SPEECH_BUBBLE_TRIGGERS.join(', '),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      }
+
+      return NextResponse.json({ configs: [...configs, fallbackTags, bubbleTriggers] });
     }
   } catch (error: any) {
     console.error('Error fetching generation config:', error);
