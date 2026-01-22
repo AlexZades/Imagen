@@ -30,7 +30,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Heart, ThumbsDown, Eye, User as UserIcon, Calendar, Maximize2, Palette, Edit, Trash2, Save } from 'lucide-react';
+import { Heart, ThumbsDown, Eye, User as UserIcon, Calendar, Maximize2, Palette, Edit, Trash2, Save, Wand2 } from 'lucide-react';
 
 interface Image {
   id: string;
@@ -47,6 +47,15 @@ interface Image {
   likeCount: number;
   dislikeCount: number;
 }
+
+// Helper function for aspect ratio
+const getAspectRatioKey = (width: number, height: number) => {
+  const ratio = width / height;
+  if (Math.abs(ratio - 16/9) < 0.1) return '4';
+  if (Math.abs(ratio - 4/3) < 0.1) return '3';
+  if (Math.abs(ratio - 3/4) < 0.1) return '2';
+  return '1'; // Default to square
+};
 
 interface Tag {
   id: string;
@@ -241,6 +250,18 @@ export default function ImageDetailPage() {
     }
   };
 
+  const handleRemix = () => {
+    if (!image) return;
+    
+    const params = new URLSearchParams();
+    if (image.promptTags) params.set('promptTags', image.promptTags);
+    if (styles.length > 0) params.set('styleId', styles[0].id);
+    if (tags.length > 0) params.set('tagIds', tags.map(t => t.id).join(','));
+    params.set('aspect', getAspectRatioKey(image.width, image.height));
+    
+    router.push(`/create?${params.toString()}`);
+  };
+
   const handleDelete = async () => {
     if (!user || !image || !imageId) return;
 
@@ -320,6 +341,15 @@ export default function ImageDetailPage() {
               >
                 <ThumbsDown className={`w-4 h-4 ${userLikeStatus === false ? 'fill-current' : ''}`} />
                 {image.dislikeCount}
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={handleRemix}
+                className="gap-2"
+              >
+                <Wand2 className="w-4 h-4" />
+                Remix
               </Button>
 
               <div className="flex items-center gap-2 text-muted-foreground ml-auto">

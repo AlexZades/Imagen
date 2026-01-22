@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,8 +35,9 @@ interface LoraConfig {
   weight: number;
 }
 
-export default function CreatePage() {
+function CreateForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [tags, setTags] = useState<Tag[]>([]);
   const [styles, setStyles] = useState<Style[]>([]);
@@ -59,6 +60,35 @@ export default function CreatePage() {
     }
     fetchData();
   }, [user, router]);
+
+  // Handle URL parameters for "Remix" functionality
+  useEffect(() => {
+    if (!isLoadingData && searchParams && searchParams.size > 0) {
+      const styleIdParam = searchParams.get('styleId');
+      const tagIdsParam = searchParams.get('tagIds');
+      const promptParam = searchParams.get('promptTags');
+      const aspectParam = searchParams.get('aspect');
+
+      if (styleIdParam && styles.some(s => s.id === styleIdParam)) {
+        setSelectedStyle(styleIdParam);
+      }
+      
+      if (tagIdsParam) {
+        const ids = tagIdsParam.split(',').filter(id => tags.some(t => t.id === id));
+        if (ids.length > 0) {
+          setSelectedTagIds(ids);
+        }
+      }
+
+      if (promptParam) {
+        setPromptTags(promptParam);
+      }
+
+      if (aspectParam && ['1', '2', '3', '4'].includes(aspectParam)) {
+        setAspectRatio(aspectParam);
+      }
+    }
+  }, [isLoadingData, searchParams, styles, tags]);
 
   // Update LoRA configs when tags are selected
   useEffect(() => {
@@ -834,5 +864,13 @@ export default function CreatePage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function CreatePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+      <CreateForm />
+    </Suspense>
   );
 }
