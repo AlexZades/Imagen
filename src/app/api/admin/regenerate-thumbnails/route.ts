@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import sharp from 'sharp';
+import { getStorageProvider, getStorageProviderType } from '@/lib/storage';
+import { LocalStorageProvider } from '@/lib/storage/local-provider';
 import path from 'path';
 import fs from 'fs';
-import sharp from 'sharp';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,13 +30,8 @@ export async function POST(request: NextRequest) {
     }
 
     const images = await prisma.image.findMany();
-    const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
-    const THUMBNAIL_DIR = path.join(UPLOAD_DIR, 'thumbnails');
-
-    // Ensure thumbnail directory exists
-    if (!fs.existsSync(THUMBNAIL_DIR)) {
-      fs.mkdirSync(THUMBNAIL_DIR, { recursive: true });
-    }
+    const storage = getStorageProvider();
+    const providerType = getStorageProviderType();
 
     let processedCount = 0;
     let errorCount = 0;
@@ -42,48 +39,72 @@ export async function POST(request: NextRequest) {
     for (const image of images) {
       if (!image.filename) continue;
 
-      const imagePath = path.join(UPLOAD_DIR, image.filename);
-      
       // Determine thumbnail filename
       let thumbnailFilename = image.thumbnailFilename;
       if (!thumbnailFilename) {
         thumbnailFilename = `thumb_${image.filename}`;
       }
-      
-      const thumbnailPath = path.join(THUMBNAIL_DIR, thumbnailFilename);
 
-      // Check if original image exists
-      if (fs.existsSync(imagePath)) {
-        try {
-          // Check if thumbnail exists, if not or if we want to force regenerate (optional logic)
-          // For now, let's regenerate all to be safe or maybe check existence
-          // Let's just regenerate them all to ensure consistency
+      try {
+        let imageBuffer: Buffer | null = null;
+
+        if (providerType === 'local') {
+          // For local storage, we can read directly from the filesystem
+          const localProvider = storage as LocalStorageProvider;
+          const imagePath = localProvider.getFilePath(image.filename);
           
-          await sharp(imagePath)
-            .resize(400, null, {
-              withoutEnlargement: true,
-              fit: 'inside',
-            })
-            .toFile(thumbnailPath);
-
-          // Update database if thumbnail filename was missing or changed (though we are keeping it consistent)
-          if (image.thumbnailFilename !== thumbnailFilename || image.thumbnailUrl !== `/uploads/thumbnails/${thumbnailFilename}`) {
-             await prisma.image.update({
-                where: { id: image.id },
-                data: {
-                    thumbnailFilename: thumbnailFilename,
-                    thumbnailUrl: `/uploads/thumbnails/${thumbnailFilename}`
-                }
-             });
+          if (fs.existsSync(imagePath)) {
+            imageBuffer = await fs.promises.readFile(imagePath);
           }
-
-          processedCount++;
-        } catch (err) {
-          console.error(`Failed to generate thumbnail for ${image.filename}:`, err);
-          errorCount++;
+        } else {
+          // For S3 storage, download the original image
+          imageBuffer = await storage.getFile(image.filename);
         }
-      } else {
-        console.warn(`Original image not found: ${imagePath}`);
+
+        if (!imageBuffer) {
+          console.warn(`Original image not found: ${image.filename}`);
+          errorCount++;
+          continue;
+        }
+
+        // Generate thumbnail
+        const thumbnailBuffer = await sharp(imageBuffer)
+          .resize(400, null, {
+            withoutEnlargement: true,
+            fit: 'inside',
+          })
+          .toBuffer();
+
+        // Get mime type from filename
+        const ext = image.filename.toLowerCase().split('.').pop();
+        const mimeTypes: Record<string, string> = {
+          'png': 'image/png',
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'gif': 'image/gif',
+          'webp': 'image/webp',
+        };
+        const mimeType = mimeTypes[ext || ''] || 'image/png';
+
+        // Upload the thumbnail
+        const thumbnailKey = `thumbnails/${thumbnailFilename}`;
+        const result = await storage.uploadFile(thumbnailBuffer, thumbnailKey, mimeType);
+
+        // Update database if thumbnail URL changed
+        const newThumbnailUrl = result.url;
+        if (image.thumbnailFilename !== thumbnailFilename || image.thumbnailUrl !== newThumbnailUrl) {
+          await prisma.image.update({
+            where: { id: image.id },
+            data: {
+              thumbnailFilename: thumbnailFilename,
+              thumbnailUrl: newThumbnailUrl
+            }
+          });
+        }
+
+        processedCount++;
+      } catch (err) {
+        console.error(`Failed to generate thumbnail for ${image.filename}:`, err);
         errorCount++;
       }
     }
@@ -91,7 +112,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       message: 'Thumbnail regeneration complete', 
       processed: processedCount, 
-      errors: errorCount 
+      errors: errorCount,
+      storageProvider: providerType
     });
 
   } catch (error: any) {
