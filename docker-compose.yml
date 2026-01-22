@@ -44,7 +44,7 @@ services:
        - S3_ACCESS_KEY_ID=admin
        - S3_SECRET_ACCESS_KEY=key
        - S3_BUCKET_NAME=imagen
-       - S3_PUBLIC_URL=http://localhost:30203/towereast
+       - S3_PUBLIC_URL=http://localhost:30203/imagen
        - S3_FORCE_PATH_STYLE=true
     
     restart: unless-stopped
