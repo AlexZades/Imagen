@@ -327,6 +327,7 @@ export default function ImageDetailPage() {
     : [];
 
   const isOwner = user && user.id === image.userId;
+  const isAdmin = user?.isAdmin === true;
 
   // Check if image has speech bubble related tags
   const hasSpeechBubbles = speechBubbleTriggers.length > 0 && (
@@ -378,7 +379,7 @@ export default function ImageDetailPage() {
                 Remix
               </Button>
 
-              {hasSpeechBubbles && (
+              {(hasSpeechBubbles || isAdmin) && (
                 <Button
                   variant="secondary"
                   onClick={() => router.push(`/image/${image.id}/edit-bubbles`)}
@@ -394,7 +395,7 @@ export default function ImageDetailPage() {
                 {image.viewCount} views
               </div>
 
-              {isOwner && (
+              {(isOwner || isAdmin) && (
                 <>
                   <Button
                     variant="outline"
