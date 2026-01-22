@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     
-    container_name: pixelvault-web
+    container_name: imagen
     
     # Run as root to avoid permission issues
     user: "0:0"
