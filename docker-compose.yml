@@ -31,7 +31,7 @@ services:
       # - AUTO_GENERATION_SECRET=your-secret-token-here
       
       # Set to "true" to run migrations on startup
-      - AUTO_MIGRATE=true
+      - AUTO_MIGRATE=false
       
       # ==================== Storage Configuration ====================
       # Storage provider: 'local' (default) or 's3' (for SeaweedFS/MinIO/AWS S3)
