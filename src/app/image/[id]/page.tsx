@@ -30,7 +30,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Heart, ThumbsDown, Eye, User as UserIcon, Calendar, Maximize2, Palette, Edit, Trash2, Save, RefreshCw } from 'lucide-react';
+import { Heart, ThumbsDown, Eye, User as UserIcon, Calendar, Maximize2, Palette, Edit, Trash2, Save, RefreshCw, MessageSquare } from 'lucide-react';
 
 interface Image {
   id: string;
@@ -308,6 +308,11 @@ export default function ImageDetailPage() {
 
   const isOwner = user && user.id === image.userId;
 
+  // Check if image has speech bubble related tags
+  const hasSpeechBubbles = 
+    simpleTags.some(t => ['speech bubble', 'speech_bubble', 'speech-bubble', 'dialogue', 'text', 'comic', 'manga'].some(k => t.toLowerCase().includes(k))) ||
+    tags.some(t => ['speech bubble', 'speech_bubble', 'speech-bubble', 'dialogue', 'text', 'comic', 'manga'].some(k => t.name.toLowerCase().includes(k)));
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -324,7 +329,7 @@ export default function ImageDetailPage() {
               />
             </Card>
 
-            <div className="mt-4 flex items-center gap-4">
+            <div className="mt-4 flex flex-wrap items-center gap-4">
               <Button
                 variant={userLikeStatus === true ? 'default' : 'outline'}
                 onClick={() => handleLike(true)}
@@ -351,6 +356,17 @@ export default function ImageDetailPage() {
                 <RefreshCw className="w-4 h-4" />
                 Remix
               </Button>
+
+              {hasSpeechBubbles && (
+                <Button
+                  variant="secondary"
+                  onClick={() => router.push(`/image/${image.id}/edit-bubbles`)}
+                  className="gap-2"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  Edit Bubbles
+                </Button>
+              )}
 
               <div className="flex items-center gap-2 text-muted-foreground ml-auto">
                 <Eye className="w-4 h-4" />
