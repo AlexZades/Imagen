@@ -40,9 +40,9 @@ services:
       # S3-Compatible Storage Configuration (required when STORAGE_PROVIDER=s3)
       # Uncomment and configure these for SeaweedFS or other S3-compatible storage
        - S3_ENDPOINT=http://localhost:8333
-       - S3_REGION=us-east-1
-       - S3_ACCESS_KEY_ID=your-access-key
-       - S3_SECRET_ACCESS_KEY=your-secret-key
+       - S3_REGION=tokyo
+       - S3_ACCESS_KEY_ID=admin
+       - S3_SECRET_ACCESS_KEY=key
        - S3_BUCKET_NAME=pixelvault
        - S3_PUBLIC_URL=http://localhost:8333/towereast
        - S3_FORCE_PATH_STYLE=true
