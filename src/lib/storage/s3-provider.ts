@@ -4,6 +4,8 @@ import {
   DeleteObjectCommand,
   HeadObjectCommand,
   GetObjectCommand,
+  HeadBucketCommand,
+  CreateBucketCommand,
 } from '@aws-sdk/client-s3';
 import { StorageProvider, UploadResult } from './types';
 
@@ -17,6 +19,7 @@ export class S3StorageProvider implements StorageProvider {
   private client: S3Client;
   private bucketName: string;
   private publicUrl: string;
+  private initializationPromise: Promise<void> | null = null;
 
   constructor(config: {
     endpoint: string;
@@ -52,7 +55,45 @@ export class S3StorageProvider implements StorageProvider {
     console.log(`[S3StorageProvider] Initialized with endpoint: ${config.endpoint}, bucket: ${config.bucketName}`);
   }
 
+  /**
+   * Ensure the bucket exists, creating it if necessary.
+   * This is called lazily before operations that require the bucket.
+   */
+  private async ensureBucket(): Promise<void> {
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    this.initializationPromise = (async () => {
+      try {
+        // Check if bucket exists
+        await this.client.send(new HeadBucketCommand({ Bucket: this.bucketName }));
+        console.log(`[S3StorageProvider] Bucket '${this.bucketName}' exists.`);
+      } catch (error: any) {
+        // If bucket not found (404), create it
+        if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+          console.log(`[S3StorageProvider] Bucket '${this.bucketName}' not found. Creating...`);
+          try {
+            await this.client.send(new CreateBucketCommand({ Bucket: this.bucketName }));
+            console.log(`[S3StorageProvider] Bucket '${this.bucketName}' created successfully.`);
+          } catch (createError) {
+            console.error(`[S3StorageProvider] Failed to create bucket '${this.bucketName}':`, createError);
+            throw createError;
+          }
+        } else {
+          // Other errors (e.g., permissions, connection)
+          console.error(`[S3StorageProvider] Error checking bucket '${this.bucketName}':`, error);
+          throw error;
+        }
+      }
+    })();
+
+    return this.initializationPromise;
+  }
+
   async uploadFile(buffer: Buffer, key: string, mimeType: string): Promise<UploadResult> {
+    await this.ensureBucket();
+
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
       Key: key,
@@ -80,6 +121,19 @@ export class S3StorageProvider implements StorageProvider {
   }
 
   async deleteFile(key: string): Promise<void> {
+    // We don't necessarily need to create the bucket to delete a file,
+    // but checking ensures we don't error out on a missing bucket.
+    // However, to keep it simple and consistent, we'll ensure it exists.
+    try {
+      await this.ensureBucket();
+    } catch (error) {
+      // If we can't ensure the bucket (e.g. connection error), 
+      // we probably can't delete anyway.
+      // But if it was just 404 on creation, we can ignore delete.
+      console.warn(`[S3StorageProvider] Could not ensure bucket for deletion:`, error);
+      return;
+    }
+
     const command = new DeleteObjectCommand({
       Bucket: this.bucketName,
       Key: key,
@@ -95,6 +149,15 @@ export class S3StorageProvider implements StorageProvider {
   }
 
   async fileExists(key: string): Promise<boolean> {
+    // For checking existence, we should ensure bucket exists first,
+    // otherwise HeadObject will fail with NoSuchBucket or similar.
+    try {
+      await this.ensureBucket();
+    } catch (error) {
+      // If bucket issue, assume file doesn't exist
+      return false;
+    }
+
     const command = new HeadObjectCommand({
       Bucket: this.bucketName,
       Key: key,
@@ -113,6 +176,12 @@ export class S3StorageProvider implements StorageProvider {
   }
 
   async getFile(key: string): Promise<Buffer | null> {
+    try {
+      await this.ensureBucket();
+    } catch (error) {
+      return null;
+    }
+
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
       Key: key,
