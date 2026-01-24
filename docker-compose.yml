@@ -29,7 +29,7 @@ services:
       - DATABASE_URL=postgresql://admin:7f699476032a69382c113046726fe2b6@192.168.0.17:5432/Imagen?schema=public
       - COMFYUI_API_URL=http://192.168.0.16:3000
       # - AUTO_GENERATION_SECRET=your-secret-token-here
-      # - CREDITS_SYSTEM_ENABLED=true
+      - CREDITS_SYSTEM_ENABLED=true
       
       # Set to "true" to run migrations on startup
       - AUTO_MIGRATE=false
