@@ -9,6 +9,7 @@ interface User {
   createdAt: string;
   avatarUrl?: string;
   isAdmin?: boolean;
+  creditsFree?: number;
 }
 
 interface AuthContextType {
@@ -16,6 +17,8 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  updateUser: (updates: Partial<User>) => void;
+  refreshUser: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -34,6 +37,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   }, []);
 
+  const persistUser = (nextUser: User | null) => {
+    if (nextUser) {
+      localStorage.setItem('user', JSON.stringify(nextUser));
+    } else {
+      localStorage.removeItem('user');
+    }
+  };
+
   const login = async (username: string, password: string) => {
     const response = await fetch('/api/auth/login', {
       method: 'POST',
@@ -48,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const data = await response.json();
     setUser(data.user);
-    localStorage.setItem('user', JSON.stringify(data.user));
+    persistUser(data.user);
   };
 
   const register = async (username: string, email: string, password: string) => {
@@ -65,16 +76,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const data = await response.json();
     setUser(data.user);
-    localStorage.setItem('user', JSON.stringify(data.user));
+    persistUser(data.user);
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('user');
+    persistUser(null);
+  };
+
+  const updateUser = (updates: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...updates };
+      persistUser(next);
+      return next;
+    });
+  };
+
+  const refreshUser = async () => {
+    if (!user?.id) return;
+    const res = await fetch(`/api/users/${user.id}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data?.user) {
+      setUser(data.user);
+      persistUser(data.user);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, updateUser, refreshUser, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

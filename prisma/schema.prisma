@@ -16,6 +16,10 @@ model User {
   isAdmin      Boolean  @default(false)
   createdAt    DateTime @default(now())
 
+  // Credits system
+  creditsFree            Int       @default(0) @map("credits_free")
+  creditsFreeLastGrantAt DateTime? @map("credits_free_last_grant_at")
+
   images Image[]
   likes  Like[]
 }

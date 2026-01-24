@@ -9,9 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/auth-context';
-import { Sparkles, Loader2, Wand2, X, Info } from 'lucide-react';
+import { Sparkles, Loader2, Wand2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Tag {
@@ -38,7 +37,7 @@ interface LoraConfig {
 function CreateForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [tags, setTags] = useState<Tag[]>([]);
   const [styles, setStyles] = useState<Style[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -53,13 +52,38 @@ function CreateForm() {
   const [showReveal, setShowReveal] = useState(false);
   const [isImageFadingOut, setIsImageFadingOut] = useState(false);
 
+  const [creditsEnabled, setCreditsEnabled] = useState(false);
+  const [creditCost, setCreditCost] = useState<number>(0);
+
   useEffect(() => {
     if (!user) {
       router.push('/login');
       return;
     }
     fetchData();
+    fetchCredits();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, router]);
+
+  const fetchCredits = async () => {
+    if (!user) return;
+    try {
+      const res = await fetch(`/api/credits?userId=${user.id}`);
+      const data = await res.json();
+      if (data?.enabled) {
+        setCreditsEnabled(true);
+        setCreditCost(data?.config?.creditCost ?? 0);
+        if (typeof data?.creditsFree === 'number') {
+          updateUser({ creditsFree: data.creditsFree });
+        }
+      } else {
+        setCreditsEnabled(false);
+      }
+    } catch (error) {
+      // If credits endpoint fails, just hide credits UI
+      setCreditsEnabled(false);
+    }
+  };
 
   // Handle URL parameters for "Remix" functionality
   useEffect(() => {
@@ -69,12 +93,14 @@ function CreateForm() {
       const promptParam = searchParams.get('promptTags');
       const aspectParam = searchParams.get('aspect');
 
-      if (styleIdParam && styles.some(s => s.id === styleIdParam)) {
+      if (styleIdParam && styles.some((s) => s.id === styleIdParam)) {
         setSelectedStyle(styleIdParam);
       }
-      
+
       if (tagIdsParam) {
-        const ids = tagIdsParam.split(',').filter(id => tags.some(t => t.id === id));
+        const ids = tagIdsParam
+          .split(',')
+          .filter((id) => tags.some((t) => t.id === id));
         if (ids.length > 0) {
           setSelectedTagIds(ids);
         }
@@ -93,19 +119,19 @@ function CreateForm() {
   // Update LoRA configs when tags are selected
   useEffect(() => {
     const newConfigs: LoraConfig[] = [];
-    
-    selectedTagIds.forEach(tagId => {
-      const tag = tags.find(t => t.id === tagId);
+
+    selectedTagIds.forEach((tagId) => {
+      const tag = tags.find((t) => t.id === tagId);
       if (tag && tag.loras && tag.loras.length > 0) {
-        tag.loras.forEach(lora => {
+        tag.loras.forEach((lora) => {
           // Only add if we haven't reached 4 LoRAs yet
           if (newConfigs.length < 4) {
             const minStrength = tag.minStrength !== undefined ? tag.minStrength : 1;
             const maxStrength = tag.maxStrength !== undefined ? tag.maxStrength : 1;
-            
+
             // Generate random weight between min and max
             const randomWeight = minStrength + Math.random() * (maxStrength - minStrength);
-            
+
             newConfigs.push({
               name: lora,
               weight: parseFloat(randomWeight.toFixed(2)),
@@ -114,16 +140,13 @@ function CreateForm() {
         });
       }
     });
-    
+
     setLoraConfigs(newConfigs);
   }, [selectedTagIds, tags]);
 
   const fetchData = async () => {
     try {
-      const [tagsRes, stylesRes] = await Promise.all([
-        fetch('/api/tags'),
-        fetch('/api/styles'),
-      ]);
+      const [tagsRes, stylesRes] = await Promise.all([fetch('/api/tags'), fetch('/api/styles')]);
 
       const tagsData = await tagsRes.json();
       const stylesData = await stylesRes.json();
@@ -145,8 +168,10 @@ function CreateForm() {
   };
 
   const handleRemoveTag = (tagId: string) => {
-    setSelectedTagIds(selectedTagIds.filter(id => id !== tagId));
+    setSelectedTagIds(selectedTagIds.filter((id) => id !== tagId));
   };
+
+  const canAffordGeneration = !creditsEnabled || (user?.creditsFree ?? 0) >= creditCost;
 
   const handleGenerate = async () => {
     if (!promptTags.trim()) {
@@ -159,7 +184,12 @@ function CreateForm() {
       return;
     }
 
-    const selectedStyleObj = styles.find(s => s.id === selectedStyle);
+    if (creditsEnabled && !canAffordGeneration) {
+      toast.error('You do not have enough credits to generate an image');
+      return;
+    }
+
+    const selectedStyleObj = styles.find((s) => s.id === selectedStyle);
     if (!selectedStyleObj?.checkpointName) {
       toast.error('Selected style must have a checkpoint name configured');
       return;
@@ -169,7 +199,7 @@ function CreateForm() {
     if (generatedImage) {
       setIsImageFadingOut(true);
       // Wait for the fade-out animation to complete
-      await new Promise(resolve => setTimeout(resolve, 400));
+      await new Promise((resolve) => setTimeout(resolve, 400));
     }
 
     setIsGenerating(true);
@@ -178,40 +208,39 @@ function CreateForm() {
 
     try {
       // Randomize LoRA weights again on each generation
-      const randomizedConfigs = loraConfigs.map(config => {
+      const randomizedConfigs = loraConfigs.map((config) => {
         const tag = selectedTagIds
-          .map(id => tags.find(t => t.id === id))
-          .find(t => t?.loras?.includes(config.name));
-        
+          .map((id) => tags.find((t) => t.id === id))
+          .find((t) => t?.loras?.includes(config.name));
+
         if (tag) {
           const minStrength = tag.minStrength !== undefined ? tag.minStrength : 1;
           const maxStrength = tag.maxStrength !== undefined ? tag.maxStrength : 1;
           const randomWeight = minStrength + Math.random() * (maxStrength - minStrength);
-          
+
           return {
             ...config,
-            weight: parseFloat(randomWeight.toFixed(2))
+            weight: parseFloat(randomWeight.toFixed(2)),
           };
         }
         return config;
       });
 
-      const loraNames = randomizedConfigs.map(config => config.name);
-      const loraWeights = randomizedConfigs.map(config => config.weight);
+      const loraNames = randomizedConfigs.map((config) => config.name);
+      const loraWeights = randomizedConfigs.map((config) => config.weight);
 
       // Collect forced prompt tags from selected tags
       const forcedTags: string[] = [];
-      selectedTagIds.forEach(tagId => {
-        const tag = tags.find(t => t.id === tagId);
+      selectedTagIds.forEach((tagId) => {
+        const tag = tags.find((t) => t.id === tagId);
         if (tag?.forcedPromptTags) {
           forcedTags.push(tag.forcedPromptTags);
         }
       });
 
       // Combine user prompt tags with forced tags
-      const allPromptTags = forcedTags.length > 0 
-        ? `${forcedTags.join(', ')}, ${promptTags}`
-        : promptTags;
+      const allPromptTags =
+        forcedTags.length > 0 ? `${forcedTags.join(', ')}, ${promptTags}` : promptTags;
 
       const response = await fetch('/api/generate', {
         method: 'POST',
@@ -219,6 +248,8 @@ function CreateForm() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          userId: user!.id,
+          consumeCredits: true,
           prompt_tags: allPromptTags,
           model_name: selectedStyleObj.checkpointName,
           lora_names: loraNames.length > 0 ? loraNames : undefined,
@@ -235,25 +266,30 @@ function CreateForm() {
       const data = await response.json();
       setGeneratedImage(`data:${data.contentType};base64,${data.image}`);
       setShowReveal(true);
-      
+
+      if (data?.credits && typeof data?.credits?.remainingFree === 'number') {
+        updateUser({ creditsFree: data.credits.remainingFree });
+      }
+
       // Auto-fill title if empty
       if (!title) {
         const selectedTagNames = selectedTagIds
-          .map(id => tags.find(t => t.id === id)?.name)
+          .map((id) => tags.find((t) => t.id === id)?.name)
           .filter(Boolean)
           .join(', ');
-        const autoTitle = selectedTagNames 
+        const autoTitle = selectedTagNames
           ? `${selectedTagNames} - ${selectedStyleObj.name}`
           : selectedStyleObj.name;
         setTitle(autoTitle);
       }
-      
+
       toast.success('Image generated successfully!');
     } catch (error: any) {
       console.error('Generation error:', error);
       toast.error(error.message || 'Failed to generate image');
     } finally {
       setIsGenerating(false);
+      setIsImageFadingOut(false);
     }
   };
 
@@ -333,9 +369,9 @@ function CreateForm() {
     return null;
   }
 
-  const availableTagsForSelection = tags.filter(tag => !selectedTagIds.includes(tag.id));
+  const availableTagsForSelection = tags.filter((tag) => !selectedTagIds.includes(tag.id));
   const forcedTagsPreview = selectedTagIds
-    .map(tagId => tags.find(t => t.id === tagId)?.forcedPromptTags)
+    .map((tagId) => tags.find((t) => t.id === tagId)?.forcedPromptTags)
     .filter(Boolean)
     .join(', ');
 
@@ -362,8 +398,18 @@ function CreateForm() {
           }
         }
 
+        @keyframes rainbow-scroll-horizontal {
+          0% {
+            background-position: 0% 50%;
+          }
+          100% {
+            background-position: 200% 50%;
+          }
+        }
+
         @keyframes sparkle {
-          0%, 100% {
+          0%,
+          100% {
             opacity: 0;
             transform: scale(0);
           }
@@ -374,7 +420,8 @@ function CreateForm() {
         }
 
         @keyframes float {
-          0%, 100% {
+          0%,
+          100% {
             transform: translateY(0px);
           }
           50% {
@@ -383,15 +430,14 @@ function CreateForm() {
         }
 
         @keyframes pulse-glow {
-          0%, 100% {
-            box-shadow: 0 0 20px rgba(255, 182, 193, 0.4),
-                        0 0 40px rgba(221, 160, 221, 0.3),
-                        0 0 60px rgba(173, 216, 230, 0.3);
+          0%,
+          100% {
+            box-shadow: 0 0 20px rgba(255, 182, 193, 0.4), 0 0 40px rgba(221, 160, 221, 0.3),
+              0 0 60px rgba(173, 216, 230, 0.3);
           }
           50% {
-            box-shadow: 0 0 30px rgba(255, 182, 193, 0.6),
-                        0 0 60px rgba(221, 160, 221, 0.5),
-                        0 0 90px rgba(173, 216, 230, 0.5);
+            box-shadow: 0 0 30px rgba(255, 182, 193, 0.6), 0 0 60px rgba(221, 160, 221, 0.5),
+              0 0 90px rgba(173, 216, 230, 0.5);
           }
         }
 
@@ -440,25 +486,43 @@ function CreateForm() {
         .pastel-rainbow-gradient-bg {
           background: linear-gradient(
             45deg,
-            #FFB6C1,
-            #FFD4B2,
-            #FFF4A3,
-            #B4E7CE,
-            #AED8E6,
-            #C5B4E3,
-            #E6B4D0,
-            #FFB6C1,
-            #FFD4B2,
-            #FFF4A3,
-            #B4E7CE,
-            #AED8E6,
-            #C5B4E3,
-            #E6B4D0,
-            #FFB6C1
+            #ffb6c1,
+            #ffd4b2,
+            #fff4a3,
+            #b4e7ce,
+            #aed8e6,
+            #c5b4e3,
+            #e6b4d0,
+            #ffb6c1,
+            #ffd4b2,
+            #fff4a3,
+            #b4e7ce,
+            #aed8e6,
+            #c5b4e3,
+            #e6b4d0,
+            #ffb6c1
           );
           background-size: 400% 400%;
           animation: fadeIn 0.8s ease-in, rainbow-scroll-diagonal 6s linear infinite;
           animation-delay: 0s, 0.8s;
+        }
+
+        .rainbow-text {
+          background: linear-gradient(
+            90deg,
+            #ff5fa2,
+            #ffb86b,
+            #fff27a,
+            #7dffb2,
+            #7ab8ff,
+            #c57dff,
+            #ff7ad1
+          );
+          background-size: 200% 100%;
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          animation: rainbow-scroll-horizontal 4s linear infinite;
         }
 
         .reveal-curtain {
@@ -466,13 +530,13 @@ function CreateForm() {
           inset: 0;
           background: linear-gradient(
             45deg,
-            #FFB6C1,
-            #FFD4B2,
-            #FFF4A3,
-            #B4E7CE,
-            #AED8E6,
-            #C5B4E3,
-            #E6B4D0
+            #ffb6c1,
+            #ffd4b2,
+            #fff4a3,
+            #b4e7ce,
+            #aed8e6,
+            #c5b4e3,
+            #e6b4d0
           );
           animation: curtainReveal 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
           z-index: 10;
@@ -493,18 +557,66 @@ function CreateForm() {
           pointer-events: none;
         }
 
-        .sparkle-burst:nth-child(1) { --tx: -100px; --ty: -100px; animation-delay: 0s; }
-        .sparkle-burst:nth-child(2) { --tx: 100px; --ty: -100px; animation-delay: 0.05s; }
-        .sparkle-burst:nth-child(3) { --tx: -100px; --ty: 100px; animation-delay: 0.1s; }
-        .sparkle-burst:nth-child(4) { --tx: 100px; --ty: 100px; animation-delay: 0.15s; }
-        .sparkle-burst:nth-child(5) { --tx: 0px; --ty: -120px; animation-delay: 0.2s; }
-        .sparkle-burst:nth-child(6) { --tx: 0px; --ty: 120px; animation-delay: 0.25s; }
-        .sparkle-burst:nth-child(7) { --tx: -120px; --ty: 0px; animation-delay: 0.3s; }
-        .sparkle-burst:nth-child(8) { --tx: 120px; --ty: 0px; animation-delay: 0.35s; }
-        .sparkle-burst:nth-child(9) { --tx: -80px; --ty: -80px; animation-delay: 0.4s; }
-        .sparkle-burst:nth-child(10) { --tx: 80px; --ty: 80px; animation-delay: 0.45s; }
-        .sparkle-burst:nth-child(11) { --tx: 80px; --ty: -80px; animation-delay: 0.5s; }
-        .sparkle-burst:nth-child(12) { --tx: -80px; --ty: 80px; animation-delay: 0.55s; }
+        .sparkle-burst:nth-child(1) {
+          --tx: -100px;
+          --ty: -100px;
+          animation-delay: 0s;
+        }
+        .sparkle-burst:nth-child(2) {
+          --tx: 100px;
+          --ty: -100px;
+          animation-delay: 0.05s;
+        }
+        .sparkle-burst:nth-child(3) {
+          --tx: -100px;
+          --ty: 100px;
+          animation-delay: 0.1s;
+        }
+        .sparkle-burst:nth-child(4) {
+          --tx: 100px;
+          --ty: 100px;
+          animation-delay: 0.15s;
+        }
+        .sparkle-burst:nth-child(5) {
+          --tx: 0px;
+          --ty: -120px;
+          animation-delay: 0.2s;
+        }
+        .sparkle-burst:nth-child(6) {
+          --tx: 0px;
+          --ty: 120px;
+          animation-delay: 0.25s;
+        }
+        .sparkle-burst:nth-child(7) {
+          --tx: -120px;
+          --ty: 0px;
+          animation-delay: 0.3s;
+        }
+        .sparkle-burst:nth-child(8) {
+          --tx: 120px;
+          --ty: 0px;
+          animation-delay: 0.35s;
+        }
+        .sparkle-burst:nth-child(9) {
+          --tx: -80px;
+          --ty: -80px;
+          animation-delay: 0.4s;
+        }
+        .sparkle-burst:nth-child(10) {
+          --tx: 80px;
+          --ty: 80px;
+          animation-delay: 0.45s;
+        }
+        .sparkle-burst:nth-child(11) {
+          --tx: 80px;
+          --ty: -80px;
+          animation-delay: 0.5s;
+        }
+        .sparkle-burst:nth-child(12) {
+          --tx: -80px;
+          --ty: 80px;
+          animation-delay: 0.55s;
+        }
 
         .shimmer-overlay {
           position: absolute;
@@ -576,7 +688,7 @@ function CreateForm() {
         .sparkle:nth-child(8) {
           top: 20%;
           left: 90%;
-          animation-delay: 1.0s;
+          animation-delay: 1s;
         }
 
         .sparkle:nth-child(9) {
@@ -602,9 +714,20 @@ function CreateForm() {
 
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center gap-3 mb-8">
-            <Sparkles className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl font-bold">Create Image</h1>
+          <div className="flex items-center justify-between gap-3 mb-8">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-8 h-8 text-primary" />
+              <h1 className="text-3xl font-bold">Create Image</h1>
+            </div>
+
+            {creditsEnabled && (
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-yellow-500" />
+                <span className="rainbow-text font-semibold">
+                  {user.creditsFree ?? 0} credits
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -618,13 +741,11 @@ function CreateForm() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="style">Style</Label>
-                    <Select
-                      value={selectedStyle}
-                      onValueChange={setSelectedStyle}
-                      disabled={isLoadingData}
-                    >
+                    <Select value={selectedStyle} onValueChange={setSelectedStyle} disabled={isLoadingData}>
                       <SelectTrigger id="style">
-                        <SelectValue placeholder={isLoadingData ? "Loading styles..." : "Select a style"} />
+                        <SelectValue
+                          placeholder={isLoadingData ? 'Loading styles...' : 'Select a style'}
+                        />
                       </SelectTrigger>
                       <SelectContent>
                         {styles.map((style) => (
@@ -634,20 +755,16 @@ function CreateForm() {
                         ))}
                       </SelectContent>
                     </Select>
-                    {selectedStyle && styles.find(s => s.id === selectedStyle)?.description && (
+                    {selectedStyle && styles.find((s) => s.id === selectedStyle)?.description && (
                       <p className="text-sm text-muted-foreground">
-                        {styles.find(s => s.id === selectedStyle)?.description}
+                        {styles.find((s) => s.id === selectedStyle)?.description}
                       </p>
                     )}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="aspect">Aspect Ratio</Label>
-                    <Select
-                      value={aspectRatio}
-                      onValueChange={setAspectRatio}
-                      disabled={isGenerating}
-                    >
+                    <Select value={aspectRatio} onValueChange={setAspectRatio} disabled={isGenerating}>
                       <SelectTrigger id="aspect">
                         <SelectValue placeholder="Select aspect ratio" />
                       </SelectTrigger>
@@ -662,17 +779,19 @@ function CreateForm() {
 
                   <div className="space-y-2">
                     <Label>Tags (Optional) - Max 4</Label>
-                    <Select 
-                      value="" 
+                    <Select
+                      value=""
                       onValueChange={handleAddTag}
                       disabled={selectedTagIds.length >= 4 || isLoadingData}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder={
-                          selectedTagIds.length >= 4 
-                            ? "Maximum 4 tags reached" 
-                            : "Add a tag..."
-                        } />
+                        <SelectValue
+                          placeholder={
+                            selectedTagIds.length >= 4
+                              ? 'Maximum 4 tags reached'
+                              : 'Add a tag...'
+                          }
+                        />
                       </SelectTrigger>
                       <SelectContent>
                         {availableTagsForSelection.map((tag) => (
@@ -687,11 +806,11 @@ function CreateForm() {
                         ))}
                       </SelectContent>
                     </Select>
-                    
+
                     {selectedTagIds.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-2">
                         {selectedTagIds.map((tagId) => {
-                          const tag = tags.find(t => t.id === tagId);
+                          const tag = tags.find((t) => t.id === tagId);
                           return tag ? (
                             <Badge key={tagId} variant="secondary" className="gap-1">
                               {tag.name}
@@ -731,7 +850,12 @@ function CreateForm() {
 
                   <Button
                     onClick={handleGenerate}
-                    disabled={isGenerating || !promptTags.trim() || !selectedStyle}
+                    disabled={
+                      isGenerating ||
+                      !promptTags.trim() ||
+                      !selectedStyle ||
+                      (creditsEnabled && !canAffordGeneration)
+                    }
                     className="w-full"
                     size="lg"
                   >
@@ -739,6 +863,11 @@ function CreateForm() {
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         Generating...
+                      </>
+                    ) : creditsEnabled && !canAffordGeneration ? (
+                      <>
+                        <Wand2 className="w-4 h-4 mr-2" />
+                        Not enough credits
                       </>
                     ) : (
                       <>
@@ -788,12 +917,17 @@ function CreateForm() {
                   <CardDescription>Your generated image will appear here</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className={`bg-muted rounded-lg flex items-center justify-center overflow-hidden relative transition-all duration-300 ${
-                    aspectRatio === '1' ? 'aspect-square' :
-                    aspectRatio === '2' ? 'aspect-[3/4]' :
-                    aspectRatio === '3' ? 'aspect-[4/3]' :
-                    'aspect-[16/9]'
-                  }`}>
+                  <div
+                    className={`bg-muted rounded-lg flex items-center justify-center overflow-hidden relative transition-all duration-300 ${
+                      aspectRatio === '1'
+                        ? 'aspect-square'
+                        : aspectRatio === '2'
+                          ? 'aspect-[3/4]'
+                          : aspectRatio === '3'
+                            ? 'aspect-[4/3]'
+                            : 'aspect-[16/9]'
+                    }`}
+                  >
                     {isGenerating ? (
                       <div className="absolute inset-0 pastel-rainbow-gradient-bg pulse-glow rounded-lg">
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -808,7 +942,7 @@ function CreateForm() {
                               This may take ~30 seconds
                             </p>
                           </div>
-                          
+
                           {/* Sparkles */}
                           <div className="sparkle"></div>
                           <div className="sparkle"></div>
@@ -869,7 +1003,13 @@ function CreateForm() {
 
 export default function CreatePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      }
+    >
       <CreateForm />
     </Suspense>
   );

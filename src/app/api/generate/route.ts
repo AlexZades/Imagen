@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getCreditsConfig, isCreditsSystemEnabled, refundFreeCredits, tryConsumeFreeCredits } from '@/lib/credits';
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt_tags, model_name, lora_names, lora_weights, aspect } = await request.json();
+    const { prompt_tags, model_name, lora_names, lora_weights, aspect, userId, consumeCredits } =
+      await request.json();
 
     if (!prompt_tags || !model_name) {
       return NextResponse.json(
@@ -11,8 +13,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const creditsEnabled = isCreditsSystemEnabled();
+    const shouldConsumeCredits = creditsEnabled && consumeCredits !== false;
+
+    let creditCost = 0;
+    let creditsFreeAfter: number | undefined;
+
+    if (shouldConsumeCredits) {
+      if (!userId) {
+        return NextResponse.json(
+          { message: 'userId is required when credits system is enabled' },
+          { status: 400 }
+        );
+      }
+
+      const config = await getCreditsConfig();
+      creditCost = config.creditCost;
+
+      const consumeResult = await tryConsumeFreeCredits({ userId, cost: creditCost });
+
+      if (!consumeResult.ok) {
+        return NextResponse.json(
+          {
+            message:
+              consumeResult.reason === 'insufficient_credits'
+                ? 'Insufficient credits'
+                : 'User not found',
+            reason: consumeResult.reason,
+          },
+          { status: consumeResult.reason === 'insufficient_credits' ? 402 : 404 }
+        );
+      }
+
+      creditsFreeAfter = consumeResult.creditsFree;
+    }
+
     const comfyuiUrl = process.env.COMFYUI_API_URL;
     if (!comfyuiUrl) {
+      // Refund if we consumed credits but can't complete the request
+      if (shouldConsumeCredits && userId && creditCost > 0) {
+        await refundFreeCredits({ userId, amount: creditCost });
+      }
+
       return NextResponse.json(
         { message: 'COMFYUI_API_URL environment variable not set' },
         { status: 500 }
@@ -39,7 +81,7 @@ export async function POST(request: NextRequest) {
       // Handle weights - if provided as array, convert to comma-delimited string
       if (lora_weights && Array.isArray(lora_weights)) {
         const weightsToUse = lora_weights.slice(0, lorasToUse.length);
-        requestBody.lora_weight = weightsToUse.map(w => String(w)).join(',');
+        requestBody.lora_weight = weightsToUse.map((w) => String(w)).join(',');
       } else if (lora_weights) {
         // If single weight provided, use it for all LoRAs
         requestBody.lora_weight = Array(lorasToUse.length).fill(String(lora_weights)).join(',');
@@ -69,6 +111,12 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('ComfyUI Error Response:', errorText);
+
+      // Refund if generation failed
+      if (shouldConsumeCredits && userId && creditCost > 0) {
+        await refundFreeCredits({ userId, amount: creditCost });
+      }
+
       throw new Error(`ComfyUI API error: ${response.status} - ${errorText}`);
     }
 
@@ -80,7 +128,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       image: base64Image,
-      contentType: response.headers.get('content-type') || 'image/png'
+      contentType: response.headers.get('content-type') || 'image/png',
+      credits: creditsEnabled
+        ? {
+            cost: creditCost,
+            remainingFree: creditsFreeAfter,
+          }
+        : undefined,
     });
   } catch (error: any) {
     console.error('Generation error:', error);

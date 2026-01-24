@@ -23,7 +23,8 @@ export async function GET(
         email: true,
         avatarUrl: true,
         createdAt: true,
-      }
+        creditsFree: true,
+      },
     });
 
     if (!user) {

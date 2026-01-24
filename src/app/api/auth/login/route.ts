@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyPassword } from '@/lib/auth';
+import { grantDailyFreeCreditsIfNeeded } from '@/lib/credits';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { username }
+      where: { username },
     });
 
     if (!user || !verifyPassword(password, user.passwordHash)) {
@@ -24,15 +25,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        createdAt: user.createdAt,
-        avatarUrl: user.avatarUrl,
-        isAdmin: user.isAdmin,
+    // Daily free credits grant (at most once per UTC day)
+    await grantDailyFreeCreditsIfNeeded(user.id);
+
+    const refreshed = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        createdAt: true,
+        avatarUrl: true,
+        isAdmin: true,
+        creditsFree: true,
       },
+    });
+
+    return NextResponse.json({
+      user: refreshed,
     });
   } catch (error: any) {
     console.error('Login error:', error);

@@ -142,6 +142,11 @@ export function TestGenerator() {
       return;
     }
 
+    if (!user) {
+      toast.error('You must be logged in');
+      return;
+    }
+
     setIsGenerating(true);
     setGeneratedImage(null);
 
@@ -167,6 +172,8 @@ export function TestGenerator() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          userId: user.id,
+          consumeCredits: true,
           prompt_tags: allPromptTags,
           model_name: selectedStyle.checkpointName,
           lora_names: loraNames.length > 0 ? loraNames : undefined,

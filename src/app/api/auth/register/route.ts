@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/auth';
+import { grantDailyFreeCreditsIfNeeded } from '@/lib/credits';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,11 +24,8 @@ export async function POST(request: NextRequest) {
     // Check if user already exists
     const existingUser = await prisma.user.findFirst({
       where: {
-        OR: [
-          { username },
-          { email }
-        ]
-      }
+        OR: [{ username }, { email }],
+      },
     });
 
     if (existingUser) {
@@ -41,7 +39,7 @@ export async function POST(request: NextRequest) {
     const userCount = await prisma.user.count();
     const isFirstUser = userCount === 0;
 
-    const newUser = await prisma.user.create({
+    const created = await prisma.user.create({
       data: {
         username,
         email,
@@ -50,12 +48,23 @@ export async function POST(request: NextRequest) {
       },
       select: {
         id: true,
+      },
+    });
+
+    // Daily free credits grant (acts as initial credit allocation too)
+    await grantDailyFreeCreditsIfNeeded(created.id);
+
+    const newUser = await prisma.user.findUnique({
+      where: { id: created.id },
+      select: {
+        id: true,
         username: true,
         email: true,
         createdAt: true,
         isAdmin: true,
         avatarUrl: true,
-      }
+        creditsFree: true,
+      },
     });
 
     return NextResponse.json({ user: newUser }, { status: 201 });
