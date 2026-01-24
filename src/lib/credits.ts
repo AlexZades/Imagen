@@ -62,41 +62,54 @@ function isoDay(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+type UserCreditsRow = {
+  creditsFree: number;
+  creditsFreeLastGrantAt: Date | null;
+};
+
+async function getUserCreditsRow(userId: string): Promise<UserCreditsRow | null> {
+  const rows = await prisma.$queryRaw<UserCreditsRow[]>`
+    SELECT
+      "credits_free" as "creditsFree",
+      "credits_free_last_grant_at" as "creditsFreeLastGrantAt"
+    FROM "User"
+    WHERE "id" = ${userId}
+    LIMIT 1
+  `;
+
+  return rows[0] ?? null;
+}
+
+export async function getUserCreditsFree(userId: string): Promise<number | null> {
+  const row = await getUserCreditsRow(userId);
+  return row ? row.creditsFree : null;
+}
+
 export async function grantDailyFreeCreditsIfNeeded(userId: string): Promise<{ creditsFree: number } | null> {
   if (!isCreditsSystemEnabled()) return null;
 
-  const [user, config] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        creditsFree: true,
-        creditsFreeLastGrantAt: true,
-      },
-    }),
-    getCreditsConfig(),
-  ]);
-
-  if (!user) return null;
+  const [row, config] = await Promise.all([getUserCreditsRow(userId), getCreditsConfig()]);
+  if (!row) return null;
 
   const today = isoDay(new Date());
-  const last = user.creditsFreeLastGrantAt ? isoDay(user.creditsFreeLastGrantAt) : null;
+  const last = row.creditsFreeLastGrantAt ? isoDay(row.creditsFreeLastGrantAt) : null;
 
   if (last === today) {
-    return { creditsFree: user.creditsFree };
+    return { creditsFree: row.creditsFree };
   }
 
-  const newCredits = Math.min(config.maxFreeCreditLimit, user.creditsFree + config.dailyFreeCredits);
+  const newCredits = Math.min(config.maxFreeCreditLimit, row.creditsFree + config.dailyFreeCredits);
+  const now = new Date();
 
-  const updated = await prisma.user.update({
-    where: { id: userId },
-    data: {
-      creditsFree: newCredits,
-      creditsFreeLastGrantAt: new Date(),
-    },
-    select: { creditsFree: true },
-  });
+  const updated = await prisma.$queryRaw<Array<{ creditsFree: number }>>`
+    UPDATE "User"
+    SET "credits_free" = ${newCredits},
+        "credits_free_last_grant_at" = ${now}
+    WHERE "id" = ${userId}
+    RETURNING "credits_free" as "creditsFree"
+  `;
 
-  return { creditsFree: updated.creditsFree };
+  return { creditsFree: updated[0]?.creditsFree ?? newCredits };
 }
 
 export async function tryConsumeFreeCredits(params: {
@@ -104,47 +117,36 @@ export async function tryConsumeFreeCredits(params: {
   cost: number;
 }): Promise<{ ok: true; creditsFree: number } | { ok: false; reason: 'insufficient_credits' | 'user_not_found' }> {
   if (params.cost <= 0) {
-    const user = await prisma.user.findUnique({
-      where: { id: params.userId },
-      select: { creditsFree: true },
-    });
-
-    if (!user) return { ok: false, reason: 'user_not_found' };
-    return { ok: true, creditsFree: user.creditsFree };
+    const credits = await getUserCreditsFree(params.userId);
+    if (credits === null) return { ok: false, reason: 'user_not_found' };
+    return { ok: true, creditsFree: credits };
   }
 
-  const result = await prisma.user.updateMany({
-    where: {
-      id: params.userId,
-      creditsFree: { gte: params.cost },
-    },
-    data: {
-      creditsFree: { decrement: params.cost },
-    },
-  });
+  const updated = await prisma.$queryRaw<Array<{ creditsFree: number }>>`
+    UPDATE "User"
+    SET "credits_free" = "credits_free" - ${params.cost}
+    WHERE "id" = ${params.userId}
+      AND "credits_free" >= ${params.cost}
+    RETURNING "credits_free" as "creditsFree"
+  `;
 
-  if (result.count === 0) {
-    const user = await prisma.user.findUnique({
-      where: { id: params.userId },
-      select: { id: true },
-    });
+  if (!updated[0]) {
+    const exists = await prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT "id" FROM "User" WHERE "id" = ${params.userId} LIMIT 1
+    `;
 
-    if (!user) return { ok: false, reason: 'user_not_found' };
+    if (!exists[0]) return { ok: false, reason: 'user_not_found' };
     return { ok: false, reason: 'insufficient_credits' };
   }
 
-  const updated = await prisma.user.findUnique({
-    where: { id: params.userId },
-    select: { creditsFree: true },
-  });
-
-  return { ok: true, creditsFree: updated?.creditsFree ?? 0 };
+  return { ok: true, creditsFree: updated[0].creditsFree };
 }
 
 export async function refundFreeCredits(params: { userId: string; amount: number }): Promise<void> {
   if (params.amount <= 0) return;
-  await prisma.user.update({
-    where: { id: params.userId },
-    data: { creditsFree: { increment: params.amount } },
-  });
+  await prisma.$executeRaw`
+    UPDATE "User"
+    SET "credits_free" = "credits_free" + ${params.amount}
+    WHERE "id" = ${params.userId}
+  `;
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/auth';
-import { grantDailyFreeCreditsIfNeeded } from '@/lib/credits';
+import { getUserCreditsFree, grantDailyFreeCreditsIfNeeded } from '@/lib/credits';
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
 
     // Daily free credits grant (acts as initial credit allocation too)
     await grantDailyFreeCreditsIfNeeded(created.id);
+    const creditsFree = await getUserCreditsFree(created.id);
 
     const newUser = await prisma.user.findUnique({
       where: { id: created.id },
@@ -63,11 +64,10 @@ export async function POST(request: NextRequest) {
         createdAt: true,
         isAdmin: true,
         avatarUrl: true,
-        creditsFree: true,
       },
     });
 
-    return NextResponse.json({ user: newUser }, { status: 201 });
+    return NextResponse.json({ user: { ...newUser, creditsFree: creditsFree ?? 0 } }, { status: 201 });
   } catch (error: any) {
     console.error('Registration error:', error);
     return NextResponse.json(

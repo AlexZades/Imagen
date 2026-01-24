@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyPassword } from '@/lib/auth';
-import { grantDailyFreeCreditsIfNeeded } from '@/lib/credits';
+import { getUserCreditsFree, grantDailyFreeCreditsIfNeeded } from '@/lib/credits';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
 
     // Daily free credits grant (at most once per UTC day)
     await grantDailyFreeCreditsIfNeeded(user.id);
+    const creditsFree = await getUserCreditsFree(user.id);
 
     const refreshed = await prisma.user.findUnique({
       where: { id: user.id },
@@ -37,12 +38,14 @@ export async function POST(request: NextRequest) {
         createdAt: true,
         avatarUrl: true,
         isAdmin: true,
-        creditsFree: true,
       },
     });
 
     return NextResponse.json({
-      user: refreshed,
+      user: {
+        ...refreshed,
+        creditsFree: creditsFree ?? 0,
+      },
     });
   } catch (error: any) {
     console.error('Login error:', error);
