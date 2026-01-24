@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCreditsConfig, isCreditsSystemEnabled, refundFreeCredits, tryConsumeFreeCredits } from '@/lib/credits';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,12 +15,16 @@ export async function POST(request: NextRequest) {
     }
 
     const creditsEnabled = isCreditsSystemEnabled();
-    const shouldConsumeCredits = creditsEnabled && consumeCredits !== false;
+
+    // If credits are enabled and the caller didn't explicitly disable consumption,
+    // enforce credits EXCEPT for admin users (admins are unlimited).
+    const consumptionRequested = creditsEnabled && consumeCredits !== false;
 
     let creditCost = 0;
     let creditsFreeAfter: number | undefined;
+    let isUnlimited = false;
 
-    if (shouldConsumeCredits) {
+    if (consumptionRequested) {
       if (!userId) {
         return NextResponse.json(
           { message: 'userId is required when credits system is enabled' },
@@ -27,31 +32,45 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const config = await getCreditsConfig();
-      creditCost = config.creditCost;
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, isAdmin: true },
+      });
 
-      const consumeResult = await tryConsumeFreeCredits({ userId, cost: creditCost });
-
-      if (!consumeResult.ok) {
-        return NextResponse.json(
-          {
-            message:
-              consumeResult.reason === 'insufficient_credits'
-                ? 'Insufficient credits'
-                : 'User not found',
-            reason: consumeResult.reason,
-          },
-          { status: consumeResult.reason === 'insufficient_credits' ? 402 : 404 }
-        );
+      if (!user) {
+        return NextResponse.json({ message: 'User not found' }, { status: 404 });
       }
 
-      creditsFreeAfter = consumeResult.creditsFree;
+      if (user.isAdmin) {
+        // Admin users do not consume credits.
+        isUnlimited = true;
+      } else {
+        const config = await getCreditsConfig();
+        creditCost = config.creditCost;
+
+        const consumeResult = await tryConsumeFreeCredits({ userId, cost: creditCost });
+
+        if (!consumeResult.ok) {
+          return NextResponse.json(
+            {
+              message:
+                consumeResult.reason === 'insufficient_credits'
+                  ? 'Insufficient credits'
+                  : 'User not found',
+              reason: consumeResult.reason,
+            },
+            { status: consumeResult.reason === 'insufficient_credits' ? 402 : 404 }
+          );
+        }
+
+        creditsFreeAfter = consumeResult.creditsFree;
+      }
     }
 
     const comfyuiUrl = process.env.COMFYUI_API_URL;
     if (!comfyuiUrl) {
       // Refund if we consumed credits but can't complete the request
-      if (shouldConsumeCredits && userId && creditCost > 0) {
+      if (creditsEnabled && consumptionRequested && userId && creditCost > 0 && !isUnlimited) {
         await refundFreeCredits({ userId, amount: creditCost });
       }
 
@@ -113,7 +132,7 @@ export async function POST(request: NextRequest) {
       console.error('ComfyUI Error Response:', errorText);
 
       // Refund if generation failed
-      if (shouldConsumeCredits && userId && creditCost > 0) {
+      if (creditsEnabled && consumptionRequested && userId && creditCost > 0 && !isUnlimited) {
         await refundFreeCredits({ userId, amount: creditCost });
       }
 
@@ -131,6 +150,7 @@ export async function POST(request: NextRequest) {
       contentType: response.headers.get('content-type') || 'image/png',
       credits: creditsEnabled
         ? {
+            isUnlimited,
             cost: creditCost,
             remainingFree: creditsFreeAfter,
           }

@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { creditsFree: true },
+      select: { creditsFree: true, isAdmin: true },
     });
 
     if (!user) {
@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       enabled: true,
       config,
+      isUnlimited: user.isAdmin,
       creditsFree: user.creditsFree,
     });
   } catch (error: any) {

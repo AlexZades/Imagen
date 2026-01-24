@@ -171,7 +171,7 @@ function CreateForm() {
     setSelectedTagIds(selectedTagIds.filter((id) => id !== tagId));
   };
 
-  const canAffordGeneration = !creditsEnabled || (user?.creditsFree ?? 0) >= creditCost;
+  const canAffordGeneration = user?.isAdmin || !creditsEnabled || (user?.creditsFree ?? 0) >= creditCost;
 
   const handleGenerate = async () => {
     if (!promptTags.trim()) {
@@ -249,7 +249,7 @@ function CreateForm() {
         },
         body: JSON.stringify({
           userId: user!.id,
-          consumeCredits: true,
+          consumeCredits: !user?.isAdmin,
           prompt_tags: allPromptTags,
           model_name: selectedStyleObj.checkpointName,
           lora_names: loraNames.length > 0 ? loraNames : undefined,
@@ -724,7 +724,7 @@ function CreateForm() {
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-yellow-500" />
                 <span className="rainbow-text font-semibold">
-                  {user.creditsFree ?? 0} credits
+                  {user.isAdmin ? '∞' : (user.creditsFree ?? 0)} credits
                 </span>
               </div>
             )}
