@@ -90,6 +90,7 @@ export async function GET(request: NextRequest) {
 
     if (likedTagIds.size > 0) {
       // Find images with matching tags that the user hasn't uploaded
+      // Use a deterministic ordering based on userId to ensure consistency
       const potentialRecommendations = await prisma.image.findMany({
         where: {
           userId: { not: userId },
@@ -101,15 +102,13 @@ export async function GET(request: NextRequest) {
         },
         orderBy: [
           { likeCount: 'desc' },
-          { createdAt: 'desc' }
+          { createdAt: 'desc' },
+          { id: 'asc' } // Add deterministic ordering
         ],
-        take: effectiveRecLimit * 2, // Fetch more to ensure variety
+        take: effectiveRecLimit,
       });
 
-      // Shuffle and limit
-      recommendedImages = potentialRecommendations
-        .sort(() => Math.random() - 0.5)
-        .slice(0, effectiveRecLimit);
+      recommendedImages = potentialRecommendations;
     }
 
     // If we don't have enough recommendations, fill with popular images
@@ -121,7 +120,8 @@ export async function GET(request: NextRequest) {
         },
         orderBy: [
           { likeCount: 'desc' },
-          { viewCount: 'desc' }
+          { viewCount: 'desc' },
+          { id: 'asc' } // Add deterministic ordering
         ],
         take: effectiveRecLimit - recommendedImages.length,
       });

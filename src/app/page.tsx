@@ -28,7 +28,9 @@ export default function Home() {
 
   useEffect(() => {
     fetchImages();
-  }, [user]);
+    // Only depend on user.id, not the entire user object
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const fetchImages = async () => {
     try {
