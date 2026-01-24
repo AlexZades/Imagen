@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/auth-context';
+import { useCredits } from '@/contexts/credits-context';
 import { Sparkles, Loader2, Wand2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -38,6 +39,7 @@ function CreateForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, updateUser } = useAuth();
+  const { creditsEnabled, creditCost } = useCredits();
   const [tags, setTags] = useState<Tag[]>([]);
   const [styles, setStyles] = useState<Style[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -52,38 +54,14 @@ function CreateForm() {
   const [showReveal, setShowReveal] = useState(false);
   const [isImageFadingOut, setIsImageFadingOut] = useState(false);
 
-  const [creditsEnabled, setCreditsEnabled] = useState(false);
-  const [creditCost, setCreditCost] = useState<number>(0);
-
   useEffect(() => {
     if (!user) {
       router.push('/login');
       return;
     }
     fetchData();
-    fetchCredits();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, router]);
-
-  const fetchCredits = async () => {
-    if (!user) return;
-    try {
-      const res = await fetch(`/api/credits?userId=${user.id}`);
-      const data = await res.json();
-      if (data?.enabled) {
-        setCreditsEnabled(true);
-        setCreditCost(data?.config?.creditCost ?? 0);
-        if (typeof data?.creditsFree === 'number') {
-          updateUser({ creditsFree: data.creditsFree });
-        }
-      } else {
-        setCreditsEnabled(false);
-      }
-    } catch (error) {
-      // If credits endpoint fails, just hide credits UI
-      setCreditsEnabled(false);
-    }
-  };
+  }, [user?.id, router]);
 
   // Handle URL parameters for "Remix" functionality
   useEffect(() => {

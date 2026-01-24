@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import { useCredits } from '@/contexts/credits-context';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -17,44 +18,9 @@ import { User, Upload, LogOut, Shield, Home, Clock, Sparkles } from 'lucide-reac
 import { cn } from '@/lib/utils';
 
 export function Navbar() {
-  const { user, logout, updateUser } = useAuth();
+  const { user, logout } = useAuth();
+  const { creditsEnabled } = useCredits();
   const pathname = usePathname();
-  const [creditsEnabled, setCreditsEnabled] = useState(false);
-
-  useEffect(() => {
-    if (!user?.id) {
-      setCreditsEnabled(false);
-      return;
-    }
-
-    let cancelled = false;
-
-    const loadCredits = async () => {
-      try {
-        const res = await fetch(`/api/credits?userId=${user.id}`);
-        const data = await res.json();
-
-        if (cancelled) return;
-
-        if (data?.enabled) {
-          setCreditsEnabled(true);
-          if (typeof data?.creditsFree === 'number') {
-            updateUser({ creditsFree: data.creditsFree });
-          }
-        } else {
-          setCreditsEnabled(false);
-        }
-      } catch {
-        if (!cancelled) setCreditsEnabled(false);
-      }
-    };
-
-    loadCredits();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.id, updateUser]);
 
   const navItems = [
     { href: '/', label: 'Home', icon: Home },
