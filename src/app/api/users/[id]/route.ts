@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserCreditsFree, isCreditsSystemEnabled } from '@/lib/credits';
 
 export async function GET(
   request: NextRequest,
@@ -24,6 +23,7 @@ export async function GET(
         email: true,
         avatarUrl: true,
         createdAt: true,
+        creditsFree: true,
       },
     });
 
@@ -34,14 +34,7 @@ export async function GET(
       );
     }
 
-    const creditsFree = isCreditsSystemEnabled() ? await getUserCreditsFree(userId) : null;
-
-    return NextResponse.json({
-      user: {
-        ...user,
-        creditsFree: creditsFree ?? 0,
-      },
-    });
+    return NextResponse.json({ user });
   } catch (error: any) {
     console.error('Error fetching user:', error);
     return NextResponse.json(

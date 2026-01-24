@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCreditsConfig, getUserCreditsFree, isCreditsSystemEnabled } from '@/lib/credits';
+import { prisma } from '@/lib/prisma';
+import { getCreditsConfig, isCreditsSystemEnabled } from '@/lib/credits';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,15 +19,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ enabled: true, config });
     }
 
-    const creditsFree = await getUserCreditsFree(userId);
-    if (creditsFree === null) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { creditsFree: true },
+    });
+
+    if (!user) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
 
     return NextResponse.json({
       enabled: true,
       config,
-      creditsFree,
+      creditsFree: user.creditsFree,
     });
   } catch (error: any) {
     console.error('Error fetching credits:', error);
