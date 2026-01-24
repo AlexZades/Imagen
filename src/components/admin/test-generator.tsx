@@ -173,7 +173,7 @@ export function TestGenerator() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: user.id,
-          consumeCredits: true,
+          consumeCredits: false,
           prompt_tags: allPromptTags,
           model_name: selectedStyle.checkpointName,
           lora_names: loraNames.length > 0 ? loraNames : undefined,

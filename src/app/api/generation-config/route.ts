@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { CREDITS_CONFIG_KEYS, DEFAULT_CREDITS_CONFIG } from '@/lib/credits';
 
 const DEFAULT_FALLBACK_TAGS = [
   'standing', 'sitting', 'smiling', 'looking at viewer',
@@ -21,6 +22,17 @@ interface GenerationConfig {
   updatedAt: Date;
 }
 
+function defaultForKey(key: string): string | null {
+  if (key === 'fallback_tags') return DEFAULT_FALLBACK_TAGS.join(', ');
+  if (key === 'speech_bubble_triggers') return DEFAULT_SPEECH_BUBBLE_TRIGGERS.join(', ');
+
+  if (key === CREDITS_CONFIG_KEYS.creditCost) return String(DEFAULT_CREDITS_CONFIG.creditCost);
+  if (key === CREDITS_CONFIG_KEYS.dailyFreeCredits) return String(DEFAULT_CREDITS_CONFIG.dailyFreeCredits);
+  if (key === CREDITS_CONFIG_KEYS.maxFreeCreditLimit) return String(DEFAULT_CREDITS_CONFIG.maxFreeCreditLimit);
+
+  return null;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -33,19 +45,11 @@ export async function GET(request: NextRequest) {
       });
 
       if (!config) {
-        // Return default for fallback_tags
-        if (key === 'fallback_tags') {
+        const def = defaultForKey(key);
+        if (def !== null) {
           return NextResponse.json({
-            key: 'fallback_tags',
-            value: DEFAULT_FALLBACK_TAGS.join(', '),
-          });
-        }
-        
-        // Return default for speech_bubble_triggers
-        if (key === 'speech_bubble_triggers') {
-          return NextResponse.json({
-            key: 'speech_bubble_triggers',
-            value: DEFAULT_SPEECH_BUBBLE_TRIGGERS.join(', '),
+            key,
+            value: def,
           });
         }
 
@@ -56,7 +60,7 @@ export async function GET(request: NextRequest) {
     } else {
       // Get all configs
       const configs = await prisma.generationConfig.findMany();
-      
+
       // Ensure fallback_tags exists
       let fallbackTags = configs.find((c: GenerationConfig) => c.key === 'fallback_tags');
       if (!fallbackTags) {
@@ -81,7 +85,47 @@ export async function GET(request: NextRequest) {
         };
       }
 
-      return NextResponse.json({ configs: [...configs, fallbackTags, bubbleTriggers] });
+      // Ensure credits settings exist (as virtual defaults)
+      const creditCost =
+        configs.find((c: GenerationConfig) => c.key === CREDITS_CONFIG_KEYS.creditCost) ||
+        ({
+          id: 'default-credits-cost',
+          key: CREDITS_CONFIG_KEYS.creditCost,
+          value: String(DEFAULT_CREDITS_CONFIG.creditCost),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as GenerationConfig);
+
+      const dailyFreeCredits =
+        configs.find((c: GenerationConfig) => c.key === CREDITS_CONFIG_KEYS.dailyFreeCredits) ||
+        ({
+          id: 'default-daily-free-credits',
+          key: CREDITS_CONFIG_KEYS.dailyFreeCredits,
+          value: String(DEFAULT_CREDITS_CONFIG.dailyFreeCredits),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as GenerationConfig);
+
+      const maxFreeCreditLimit =
+        configs.find((c: GenerationConfig) => c.key === CREDITS_CONFIG_KEYS.maxFreeCreditLimit) ||
+        ({
+          id: 'default-max-free-credit-limit',
+          key: CREDITS_CONFIG_KEYS.maxFreeCreditLimit,
+          value: String(DEFAULT_CREDITS_CONFIG.maxFreeCreditLimit),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as GenerationConfig);
+
+      return NextResponse.json({
+        configs: [
+          ...configs,
+          fallbackTags,
+          bubbleTriggers,
+          creditCost,
+          dailyFreeCredits,
+          maxFreeCreditLimit,
+        ],
+      });
     }
   } catch (error: any) {
     console.error('Error fetching generation config:', error);
