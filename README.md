@@ -1,6 +1,6 @@
-# Imagen:PixelVault - Image Hosting Platform
+# Imagen: Selfhosted - Image Hosting Platform
 
-A self-hosted image hosting and browsing platform with AI-powered image generation using ComfyUI. I made this for myself using dyad but if it sounds like something you want to run feel free to try it.
+A self-hosted image hosting and browsing platform with AI-powered image generation using ComfyUI and a tag system similar to pixiv. I made this for myself using dyad but if it sounds like something you want to run feel free to try it.
 
 Users can't directly generate images using this service, instead the service generates images based on the tags and parameters of uploaded and liked images. In other words, new images are generated based on user preferences. 
 
@@ -18,6 +18,7 @@ I've only tested this on NVIDIA gpus so I'm not sure if it will run on other har
 - **Search & Filter**: Find images by tags, styles, and simple tags
 - **Admin Panel**: Manage tags, styles, and test generation features
 - **Responsive Design**: Works on desktop and mobile devices
+- **S3 Bucketsupport**: Optional support for storing images using s3 buckets (either on AWS or using seaweedfile)
 
 ## Tech Stack
 
