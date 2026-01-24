@@ -45,7 +45,7 @@ export function Navbar() {
       toast.success(`NSFW content ${enabled ? 'enabled' : 'disabled'}`);
       
       // Force a refresh of the current page to apply filters if we are on a page displaying images
-      if (['/', '/newest', '/search'].includes(pathname)) {
+      if (pathname && ['/', '/newest', '/search'].includes(pathname)) {
         window.location.reload();
       }
     } catch (error) {
