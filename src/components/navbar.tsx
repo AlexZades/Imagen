@@ -13,14 +13,46 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { User, Upload, LogOut, Shield, Home, Clock, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const { creditsEnabled } = useCredits();
   const pathname = usePathname();
+
+  const handleNsfwToggle = async (enabled: boolean) => {
+    if (!user) return;
+
+    try {
+      const response = await fetch(`/api/users/${user.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nsfwEnabled: enabled }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update preference');
+      }
+
+      const data = await response.json();
+      updateUser({ nsfwEnabled: data.user.nsfwEnabled });
+      toast.success(`NSFW content ${enabled ? 'enabled' : 'disabled'}`);
+      
+      // Force a refresh of the current page to apply filters if we are on a page displaying images
+      if (['/', '/newest', '/search'].includes(pathname)) {
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Error updating NSFW preference:', error);
+      toast.error('Failed to update NSFW preference');
+    }
+  };
 
   const navItems = [
     { href: '/', label: 'Home', icon: Home },
@@ -127,6 +159,16 @@ export function Navbar() {
                       <DropdownMenuItem asChild>
                         <Link href={`/user/${user.id}`}>My Profile</Link>
                       </DropdownMenuItem>
+                      <div className="p-2 flex items-center justify-between gap-2">
+                        <Label htmlFor="nsfw-toggle" className="text-sm font-normal cursor-pointer">
+                          NSFW Content
+                        </Label>
+                        <Switch
+                          id="nsfw-toggle"
+                          checked={user.nsfwEnabled || false}
+                          onCheckedChange={handleNsfwToggle}
+                        />
+                      </div>
                       {user.isAdmin && (
                         <>
                           <DropdownMenuSeparator />

@@ -5,15 +5,20 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get('search');
+    const includeNsfw = searchParams.get('nsfw') === 'true';
 
-    const where = search
-      ? {
-          name: {
-            contains: search,
-            mode: 'insensitive' as const
-          }
-        }
-      : {};
+    const where: any = {};
+    
+    if (search) {
+      where.name = {
+        contains: search,
+        mode: 'insensitive' as const
+      };
+    }
+
+    if (!includeNsfw) {
+      where.nsfw = false;
+    }
 
     const tags = await prisma.tag.findMany({
       where,

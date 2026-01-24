@@ -28,16 +28,18 @@ export default function Home() {
 
   useEffect(() => {
     fetchImages();
-    // Only depend on user.id, not the entire user object
+    // Re-fetch when user or nsfw setting changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, user?.nsfwEnabled]);
 
   const fetchImages = async () => {
     try {
+      const nsfwParam = user?.nsfwEnabled ? '&nsfw=true' : '';
+      
       const [recommendedRes, newRes, randomRes] = await Promise.all([
-        fetch(`/api/images/recommended${user ? `?userId=${user.id}` : ''}`),
-        fetch('/api/images?limit=8&sort=new'),
-        fetch('/api/images?limit=8&sort=random'),
+        fetch(`/api/images/recommended?${user ? `userId=${user.id}` : ''}${nsfwParam}`),
+        fetch(`/api/images?limit=8&sort=new${nsfwParam}`),
+        fetch(`/api/images?limit=8&sort=random${nsfwParam}`),
       ]);
 
       const recommendedData = await recommendedRes.json();

@@ -8,6 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -33,6 +40,7 @@ export default function UploadPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [promptTags, setPromptTags] = useState('');
+  const [contentRating, setContentRating] = useState('safe');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
@@ -59,9 +67,11 @@ export default function UploadPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    fetchTags();
-    fetchStyles();
-  }, []);
+    if (!authLoading) {
+      fetchTags();
+      fetchStyles();
+    }
+  }, [authLoading, user?.nsfwEnabled]);
 
   useEffect(() => {
     if (newTagName.trim()) {
@@ -95,7 +105,8 @@ export default function UploadPage() {
 
   const fetchTags = async () => {
     try {
-      const response = await fetch('/api/tags');
+      const nsfwParam = user?.nsfwEnabled ? '?nsfw=true' : '';
+      const response = await fetch(`/api/tags${nsfwParam}`);
       const data = await response.json();
       setAvailableTags(data.tags || []);
     } catch (error) {
@@ -333,6 +344,7 @@ export default function UploadPage() {
           title,
           description,
           promptTags: promptTags.trim() || undefined,
+          contentRating,
           imageUrl: processedImage.imageUrl,
           thumbnailUrl: processedImage.thumbnailUrl,
           filename: processedImage.filename,
@@ -467,6 +479,23 @@ export default function UploadPage() {
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="contentRating">Content Rating</Label>
+                <Select value={contentRating} onValueChange={setContentRating}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select content rating" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="safe">Safe</SelectItem>
+                    <SelectItem value="questionable">Questionable</SelectItem>
+                    <SelectItem value="NSFW">NSFW</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Please rate your content appropriately.
+                </p>
               </div>
 
               <div className="space-y-2">

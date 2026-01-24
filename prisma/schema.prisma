@@ -20,6 +20,8 @@ model User {
   creditsFree            Int       @default(0) @map("credits_free")
   creditsFreeLastGrantAt DateTime? @map("credits_free_last_grant_at")
 
+  nsfwEnabled Boolean @default(false)
+
   images Image[]
   likes  Like[]
 }
@@ -30,6 +32,7 @@ model Image {
   title             String
   description       String?
   promptTags        String?
+  contentRating     String   @default("safe") @map("content_rating")
   imageUrl          String
   thumbnailUrl      String?
   filename          String?
@@ -58,6 +61,7 @@ model Tag {
   minStrength      Float?
   maxStrength      Float?
   forcedPromptTags String?
+  nsfw             Boolean  @default(false)
   usageCount       Int      @default(0)
   createdAt        DateTime @default(now())
 

@@ -6,6 +6,7 @@ import { Navbar } from '@/components/navbar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Heart, Eye, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useAuth } from '@/contexts/auth-context';
 
 interface Image {
   id: string;
@@ -18,6 +19,7 @@ interface Image {
 }
 
 export default function NewestPage() {
+  const { user } = useAuth();
   const [images, setImages] = useState<Image[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -27,13 +29,15 @@ export default function NewestPage() {
   useEffect(() => {
     fetchImages(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [page]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, user?.nsfwEnabled]);
 
   const fetchImages = async (currentPage: number) => {
     setIsLoading(true);
     try {
       const offset = (currentPage - 1) * LIMIT;
-      const response = await fetch(`/api/images?limit=${LIMIT}&sort=new&offset=${offset}`);
+      const nsfwParam = user?.nsfwEnabled ? '&nsfw=true' : '';
+      const response = await fetch(`/api/images?limit=${LIMIT}&sort=new&offset=${offset}${nsfwParam}`);
       const data = await response.json();
       setImages(data.images || []);
       setTotalImages(data.total || 0);

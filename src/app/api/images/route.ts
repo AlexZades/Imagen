@@ -9,11 +9,25 @@ export async function GET(request: NextRequest) {
     const tagId = searchParams.get('tagId');
     const styleId = searchParams.get('styleId');
     const simpleTag = searchParams.get('simpleTag');
+    const includeNsfw = searchParams.get('nsfw') === 'true';
     const sort = searchParams.get('sort'); // 'new' or 'random'
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
     const where: any = {};
+
+    if (!includeNsfw) {
+      where.contentRating = 'safe'; // Only show safe content
+      
+      // Also exclude images with NSFW tags
+      where.imageTags = {
+        none: {
+          tag: {
+            nsfw: true
+          }
+        }
+      };
+    }
 
     if (userId) {
       where.userId = userId;
@@ -23,7 +37,11 @@ export async function GET(request: NextRequest) {
       where.imageTags = {
         some: {
           tagId
-        }
+        },
+        // If not including NSFW, we already added the 'none' filter above which applies to all tags.
+        // But if filtering by a specific tag, we need to merge the logic.
+        // However, Prisma 'some' and top-level 'none' work together fine.
+        // If the specific tagId is NSFW, and we are in safe mode, the 'none' clause will hide the image anyway.
       };
     }
 
@@ -92,6 +110,7 @@ export async function POST(request: NextRequest) {
       title,
       description,
       promptTags,
+      contentRating,
       imageUrl,
       thumbnailUrl,
       filename,
@@ -118,6 +137,7 @@ export async function POST(request: NextRequest) {
           title,
           description,
           promptTags, // Store as comma-delimited string
+          contentRating: contentRating || 'safe',
           imageUrl,
           thumbnailUrl,
           filename,

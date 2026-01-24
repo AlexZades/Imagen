@@ -10,6 +10,7 @@ interface User {
   avatarUrl?: string;
   isAdmin?: boolean;
   creditsFree?: number;
+  nsfwEnabled?: boolean;
 }
 
 interface AuthContextType {
