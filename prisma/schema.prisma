@@ -126,3 +126,15 @@ model GenerationConfig {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model SimpleTag {
+  id         String   @id @default(cuid())
+  tag        String   @unique
+  category   String?
+  usageCount Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([usageCount])
+  @@index([category])
+}
