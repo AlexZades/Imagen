@@ -895,64 +895,69 @@ function CreateForm() {
                   <div className="space-y-4 border-t pt-4">
                     <Label>Characters</Label>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="maleTags" className="text-xs text-muted-foreground">Male Characters</Label>
-                      {lockedMaleTags && (
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {lockedMaleTags.split(',').map((tag, i) => (
-                            <Badge key={i} variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-200">
-                              {tag.trim()}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                      <Input
-                        id="maleTags"
-                        placeholder="e.g. John, Bob"
-                        value={maleTags}
-                        onChange={(e) => setMaleTags(e.target.value)}
-                        disabled={isGenerating}
-                      />
-                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="maleTags" className="text-xs text-muted-foreground">Male</Label>
+                        {lockedMaleTags && (
+                          <div className="flex flex-wrap gap-1 mb-1.5">
+                            {lockedMaleTags.split(',').map((tag, i) => (
+                              <Badge key={i} variant="secondary" className="text-[10px] h-5 px-1 bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-200">
+                                {tag.trim()}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        <Input
+                          id="maleTags"
+                          placeholder="Names..."
+                          value={maleTags}
+                          onChange={(e) => setMaleTags(e.target.value)}
+                          disabled={isGenerating}
+                          className="h-8 text-sm"
+                        />
+                      </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="femaleTags" className="text-xs text-muted-foreground">Female Characters</Label>
-                      {lockedFemaleTags && (
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {lockedFemaleTags.split(',').map((tag, i) => (
-                            <Badge key={i} variant="secondary" className="bg-pink-100 text-pink-800 hover:bg-pink-200 border-pink-200">
-                              {tag.trim()}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                      <Input
-                        id="femaleTags"
-                        placeholder="e.g. Alice, Mary"
-                        value={femaleTags}
-                        onChange={(e) => setFemaleTags(e.target.value)}
-                        disabled={isGenerating}
-                      />
-                    </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="femaleTags" className="text-xs text-muted-foreground">Female</Label>
+                        {lockedFemaleTags && (
+                          <div className="flex flex-wrap gap-1 mb-1.5">
+                            {lockedFemaleTags.split(',').map((tag, i) => (
+                              <Badge key={i} variant="secondary" className="text-[10px] h-5 px-1 bg-pink-100 text-pink-800 hover:bg-pink-200 border-pink-200">
+                                {tag.trim()}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        <Input
+                          id="femaleTags"
+                          placeholder="Names..."
+                          value={femaleTags}
+                          onChange={(e) => setFemaleTags(e.target.value)}
+                          disabled={isGenerating}
+                          className="h-8 text-sm"
+                        />
+                      </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="otherTags" className="text-xs text-muted-foreground">Other Characters</Label>
-                      {lockedOtherTags && (
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {lockedOtherTags.split(',').map((tag, i) => (
-                            <Badge key={i} variant="secondary" className="bg-purple-100 text-purple-800 hover:bg-purple-200 border-purple-200">
-                              {tag.trim()}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                      <Input
-                        id="otherTags"
-                        placeholder="e.g. Robot, Alien"
-                        value={otherTags}
-                        onChange={(e) => setOtherTags(e.target.value)}
-                        disabled={isGenerating}
-                      />
+                      <div className="space-y-1.5">
+                        <Label htmlFor="otherTags" className="text-xs text-muted-foreground">Other</Label>
+                        {lockedOtherTags && (
+                          <div className="flex flex-wrap gap-1 mb-1.5">
+                            {lockedOtherTags.split(',').map((tag, i) => (
+                              <Badge key={i} variant="secondary" className="text-[10px] h-5 px-1 bg-purple-100 text-purple-800 hover:bg-purple-200 border-purple-200">
+                                {tag.trim()}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        <Input
+                          id="otherTags"
+                          placeholder="Names..."
+                          value={otherTags}
+                          onChange={(e) => setOtherTags(e.target.value)}
+                          disabled={isGenerating}
+                          className="h-8 text-sm"
+                        />
+                      </div>
                     </div>
                   </div>
 
