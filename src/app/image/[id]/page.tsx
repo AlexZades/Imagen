@@ -88,11 +88,16 @@ export default function ImageDetailPage() {
   const [imageUser, setImageUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userLikeStatus, setUserLikeStatus] = useState<boolean | null>(null);
-  const [similarImages, setSimilarImages] = useState<Image[]>([]);
-  const [loadingSimilar, setLoadingSimilar] = useState(false);
-  const [hasMoreSimilar, setHasMoreSimilar] = useState(true);
   const [speechBubbleTriggers, setSpeechBubbleTriggers] = useState<string[]>([]);
+
+  // Similar images state - fetch all at once, cache, progressively reveal
+  const [allSimilarImages, setAllSimilarImages] = useState<Image[]>([]);
+  const [visibleSimilarCount, setVisibleSimilarCount] = useState(6);
+  const [isLoadingSimilar, setIsLoadingSimilar] = useState(false);
   const similarImagesRef = React.useRef<HTMLDivElement>(null);
+
+  const IMAGES_PER_ROW = 6;
+  const INITIAL_ROWS = 1; // Show 1 row initially (6 images)
 
   // Edit state
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -109,6 +114,7 @@ export default function ImageDetailPage() {
     if (imageId) {
       fetchImage();
       fetchBubbleTriggers();
+      fetchAllSimilarImages();
       if (user) {
         fetchLikeStatus();
       }
@@ -133,18 +139,6 @@ export default function ImageDetailPage() {
     }
   };
 
-  useEffect(() => {
-    if (imageId && image) {
-      // Intentionally left empty to break the dependency chain
-    }
-  }, [imageId, image]);
-
-  useEffect(() => {
-    if (imageId) {
-      fetchSimilarImages(0, true);
-    }
-  }, [imageId]);
-
   const fetchImage = async () => {
     if (!imageId) return;
     
@@ -166,50 +160,33 @@ export default function ImageDetailPage() {
     }
   };
 
-  const fetchSimilarImages = async (offset = 0, reset = false) => {
+  const fetchAllSimilarImages = async () => {
     if (!imageId) return;
     
-    // Max 5 rows * 6 images = 30 images
-    if (offset >= 30) {
-      setHasMoreSimilar(false);
-      return;
-    }
-
-    setLoadingSimilar(true);
+    setIsLoadingSimilar(true);
     try {
-      const response = await fetch(`/api/images/${imageId}/similar?limit=6&offset=${offset}`);
+      // Fetch all similar images at once (up to 60)
+      const response = await fetch(`/api/images/${imageId}/similar?limit=60&offset=0`);
       if (response.ok) {
         const data = await response.json();
-        const newImages = data.images;
-        
-        if (newImages.length < 6) {
-          setHasMoreSimilar(false);
-        }
-
-        if (reset) {
-          setSimilarImages(newImages);
-        } else {
-          // Deduplicate by ID before appending
-          setSimilarImages(prev => {
-            const existingIds = new Set(prev.map(img => img.id));
-            const uniqueNewImages = newImages.filter(img => !existingIds.has(img.id));
-            return [...prev, ...uniqueNewImages];
-          });
-        }
+        setAllSimilarImages(data.images || []);
+        // Start by showing just the first row
+        setVisibleSimilarCount(IMAGES_PER_ROW);
       }
     } catch (error) {
       console.error('Error fetching similar images:', error);
     } finally {
-      setLoadingSimilar(false);
+      setIsLoadingSimilar(false);
     }
   };
 
-  // Infinite scroll for similar images
+  // Infinite scroll - reveal more cached images
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !loadingSimilar && hasMoreSimilar && similarImages.length > 0) {
-          fetchSimilarImages(similarImages.length);
+        if (entries[0].isIntersecting && !isLoadingSimilar) {
+          // Show one more row when user scrolls to bottom
+          setVisibleSimilarCount(prev => Math.min(prev + IMAGES_PER_ROW, allSimilarImages.length));
         }
       },
       { threshold: 0.1 }
@@ -222,7 +199,7 @@ export default function ImageDetailPage() {
     return () => {
       observer.disconnect();
     };
-  }, [similarImages.length, loadingSimilar, hasMoreSimilar, imageId]);
+  }, [allSimilarImages.length, isLoadingSimilar]);
 
   const fetchLikeStatus = async () => {
     if (!user || !imageId) return;
@@ -312,9 +289,6 @@ export default function ImageDetailPage() {
       setImage(data.image);
       setIsEditDialogOpen(false);
       toast.success('Image updated successfully');
-      
-      // Refresh similar images after edit
-      fetchSimilarImages(0, true);
     } catch (error: any) {
       toast.error(error.message || 'Failed to update image');
     } finally {
@@ -395,6 +369,10 @@ export default function ImageDetailPage() {
     simpleTags.some(t => speechBubbleTriggers.some(trigger => t.toLowerCase().includes(trigger))) ||
     tags.some(t => speechBubbleTriggers.some(trigger => t.name.toLowerCase().includes(trigger)))
   );
+
+  // Get the visible subset of similar images
+  const visibleSimilarImages = allSimilarImages.slice(0, visibleSimilarCount);
+  const hasMoreSimilar = visibleSimilarCount < allSimilarImages.length;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -594,13 +572,20 @@ export default function ImageDetailPage() {
         </div>
 
         {/* Similar Images Section */}
-        {similarImages.length > 0 && (
+        {visibleSimilarImages.length > 0 && (
           <div className="mt-12">
             <Separator className="mb-6" />
-            <h2 className="text-2xl font-bold mb-6">Similar Images</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">Similar Images</h2>
+              {allSimilarImages.length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Showing {visibleSimilarImages.length} of {allSimilarImages.length}
+                </p>
+              )}
+            </div>
             
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {similarImages.map((similarImage) => (
+              {visibleSimilarImages.map((similarImage) => (
                 <Link key={similarImage.id} href={`/image/${similarImage.id}`}>
                   <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
                     <div className="aspect-square relative overflow-hidden bg-muted">
@@ -630,15 +615,15 @@ export default function ImageDetailPage() {
               ))}
             </div>
 
-            {/* Loading indicator / infinite scroll trigger */}
-            {(hasMoreSimilar || loadingSimilar) && (
+            {/* Infinite scroll trigger - only show if there are more images to reveal */}
+            {hasMoreSimilar && (
               <div 
                 ref={similarImagesRef}
                 className="flex justify-center py-8 mt-4"
               >
-                {loadingSimilar && (
-                  <p className="text-muted-foreground animate-pulse">Loading more...</p>
-                )}
+                <p className="text-sm text-muted-foreground">
+                  Scroll down to see more similar images...
+                </p>
               </div>
             )}
           </div>
