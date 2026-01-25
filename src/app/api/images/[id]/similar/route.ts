@@ -9,6 +9,7 @@ export async function GET(
     const { id } = await params;
     const searchParams = request.nextUrl.searchParams;
     const limit = parseInt(searchParams.get('limit') || '6');
+    const offset = parseInt(searchParams.get('offset') || '0');
 
     // Get the current image with its tags and simple tags
     const currentImage = await prisma.image.findUnique({
@@ -75,7 +76,8 @@ export async function GET(
       orderBy: {
         likeCount: 'desc'
       },
-      take: limit
+      take: limit,
+      skip: offset
     });
 
     // Calculate similarity score for each image
@@ -103,7 +105,7 @@ export async function GET(
     imagesWithScore.sort((a, b) => b.similarityScore - a.similarityScore);
 
     return NextResponse.json({
-      images: imagesWithScore.slice(0, limit)
+      images: imagesWithScore
     });
   } catch (error: any) {
     console.error('Error fetching similar images:', error);

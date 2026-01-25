@@ -87,7 +87,9 @@ export default function ImageDetailPage() {
   const [userLikeStatus, setUserLikeStatus] = useState<boolean | null>(null);
   const [similarImages, setSimilarImages] = useState<Image[]>([]);
   const [loadingSimilar, setLoadingSimilar] = useState(false);
+  const [hasMoreSimilar, setHasMoreSimilar] = useState(true);
   const [speechBubbleTriggers, setSpeechBubbleTriggers] = useState<string[]>([]);
+  const similarImagesRef = React.useRef<HTMLDivElement>(null);
 
   // Edit state
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -130,9 +132,15 @@ export default function ImageDetailPage() {
 
   useEffect(() => {
     if (imageId && image) {
-      fetchSimilarImages();
+      // Intentionally left empty to break the dependency chain
     }
   }, [imageId, image]);
+
+  useEffect(() => {
+    if (imageId) {
+      fetchSimilarImages(0, true);
+    }
+  }, [imageId]);
 
   const fetchImage = async () => {
     if (!imageId) return;
@@ -155,15 +163,31 @@ export default function ImageDetailPage() {
     }
   };
 
-  const fetchSimilarImages = async () => {
+  const fetchSimilarImages = async (offset = 0, reset = false) => {
     if (!imageId) return;
     
+    // Max 5 rows * 6 images = 30 images
+    if (offset >= 30) {
+      setHasMoreSimilar(false);
+      return;
+    }
+
     setLoadingSimilar(true);
     try {
-      const response = await fetch(`/api/images/${imageId}/similar?limit=6`);
+      const response = await fetch(`/api/images/${imageId}/similar?limit=6&offset=${offset}`);
       if (response.ok) {
         const data = await response.json();
-        setSimilarImages(data.images);
+        const newImages = data.images;
+        
+        if (newImages.length < 6) {
+          setHasMoreSimilar(false);
+        }
+
+        if (reset) {
+          setSimilarImages(newImages);
+        } else {
+          setSimilarImages(prev => [...prev, ...newImages]);
+        }
       }
     } catch (error) {
       console.error('Error fetching similar images:', error);
@@ -171,6 +195,26 @@ export default function ImageDetailPage() {
       setLoadingSimilar(false);
     }
   };
+
+  // Infinite scroll for similar images
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loadingSimilar && hasMoreSimilar && similarImages.length > 0) {
+          fetchSimilarImages(similarImages.length);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (similarImagesRef.current) {
+      observer.observe(similarImagesRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [similarImages.length, loadingSimilar, hasMoreSimilar, imageId]);
 
   const fetchLikeStatus = async () => {
     if (!user || !imageId) return;
@@ -262,7 +306,7 @@ export default function ImageDetailPage() {
       toast.success('Image updated successfully');
       
       // Refresh similar images after edit
-      fetchSimilarImages();
+      fetchSimilarImages(0, true);
     } catch (error: any) {
       toast.error(error.message || 'Failed to update image');
     } finally {
@@ -523,40 +567,46 @@ export default function ImageDetailPage() {
             <Separator className="mb-6" />
             <h2 className="text-2xl font-bold mb-6">Similar Images</h2>
             
-            {loadingSimilar ? (
-              <div className="flex justify-center py-8">
-                <p className="text-muted-foreground">Loading similar images...</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                {similarImages.map((similarImage) => (
-                  <Link key={similarImage.id} href={`/image/${similarImage.id}`}>
-                    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
-                      <div className="aspect-square relative overflow-hidden bg-muted">
-                        <img
-                          src={similarImage.thumbnailUrl || similarImage.imageUrl}
-                          alt={similarImage.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-                      <div className="p-3">
-                        <h3 className="font-medium text-sm truncate mb-1">
-                          {similarImage.title}
-                        </h3>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Heart className="w-3 h-3" />
-                            {similarImage.likeCount}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Eye className="w-3 h-3" />
-                            {similarImage.viewCount}
-                          </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {similarImages.map((similarImage) => (
+                <Link key={similarImage.id} href={`/image/${similarImage.id}`}>
+                  <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
+                    <div className="aspect-square relative overflow-hidden bg-muted">
+                      <img
+                        src={similarImage.thumbnailUrl || similarImage.imageUrl}
+                        alt={similarImage.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                    <div className="p-3">
+                      <h3 className="font-medium text-sm truncate mb-1">
+                        {similarImage.title}
+                      </h3>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Heart className="w-3 h-3" />
+                          {similarImage.likeCount}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Eye className="w-3 h-3" />
+                          {similarImage.viewCount}
                         </div>
                       </div>
-                    </Card>
-                  </Link>
-                ))}
+                    </div>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+
+            {/* Loading indicator / infinite scroll trigger */}
+            {(hasMoreSimilar || loadingSimilar) && (
+              <div 
+                ref={similarImagesRef}
+                className="flex justify-center py-8 mt-4"
+              >
+                {loadingSimilar && (
+                  <p className="text-muted-foreground animate-pulse">Loading more...</p>
+                )}
               </div>
             )}
           </div>
