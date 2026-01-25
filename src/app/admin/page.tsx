@@ -28,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Switch } from '@/components/ui/switch';
 import { TestGenerator } from '@/components/admin/test-generator';
 import { AutoGenerationTest } from '@/components/admin/auto-generation-test';
 import { SimpleTagsViewer } from '@/components/admin/simple-tags-viewer';
@@ -47,6 +48,7 @@ interface Tag {
   minStrength?: number;
   maxStrength?: number;
   forcedPromptTags?: string;
+  nsfw?: boolean;
 }
 
 interface Style {
@@ -81,6 +83,7 @@ export default function AdminPage() {
   const [newTagMinStrength, setNewTagMinStrength] = useState<number>(1);
   const [newTagMaxStrength, setNewTagMaxStrength] = useState<number>(1);
   const [newTagForcedPromptTags, setNewTagForcedPromptTags] = useState('');
+  const [newTagNsfw, setNewTagNsfw] = useState(false);
 
   // New style dialog state
   const [isNewStyleDialogOpen, setIsNewStyleDialogOpen] = useState(false);
@@ -133,6 +136,7 @@ export default function AdminPage() {
       minStrength: tag.minStrength,
       maxStrength: tag.maxStrength,
       forcedPromptTags: tag.forcedPromptTags,
+      nsfw: tag.nsfw,
     });
   };
 
@@ -184,6 +188,7 @@ export default function AdminPage() {
           minStrength: editTagData.minStrength,
           maxStrength: editTagData.maxStrength,
           forcedPromptTags: editTagData.forcedPromptTags,
+          nsfw: editTagData.nsfw,
         }),
       });
 
@@ -308,6 +313,7 @@ export default function AdminPage() {
           minStrength: newTagMinStrength,
           maxStrength: newTagMaxStrength,
           forcedPromptTags: newTagForcedPromptTags.trim() || undefined,
+          nsfw: newTagNsfw,
         }),
       });
 
@@ -323,6 +329,7 @@ export default function AdminPage() {
       setNewTagMinStrength(1);
       setNewTagMaxStrength(1);
       setNewTagForcedPromptTags('');
+      setNewTagNsfw(false);
       fetchData();
     } catch (error) {
       toast.error('Failed to create tag');
@@ -554,6 +561,16 @@ export default function AdminPage() {
                             These tags will be automatically included in the prompt when this tag is selected
                           </p>
                         </div>
+                        
+                        <div className="flex items-center space-x-2 pt-2">
+                          <Switch
+                            id="newTagNsfw"
+                            checked={newTagNsfw}
+                            onCheckedChange={setNewTagNsfw}
+                          />
+                          <Label htmlFor="newTagNsfw">NSFW Content</Label>
+                        </div>
+
                       </div>
                       <DialogFooter>
                         <Button variant="outline" onClick={() => setIsNewTagDialogOpen(false)}>
@@ -573,6 +590,7 @@ export default function AdminPage() {
                       <TableHead>LoRAs</TableHead>
                       <TableHead>Strength Range</TableHead>
                       <TableHead>Forced Tags</TableHead>
+                      <TableHead>NSFW</TableHead>
                       <TableHead>Usage</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -580,7 +598,7 @@ export default function AdminPage() {
                   <TableBody>
                     {tags.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                           No tags found. Create your first tag to get started.
                         </TableCell>
                       </TableRow>
@@ -676,6 +694,14 @@ export default function AdminPage() {
                                   placeholder="tag1, tag2"
                                 />
                               </TableCell>
+                              <TableCell>
+                                <Switch
+                                  checked={editTagData.nsfw || false}
+                                  onCheckedChange={(checked) =>
+                                    setEditTagData({ ...editTagData, nsfw: checked })
+                                  }
+                                />
+                              </TableCell>
                               <TableCell>{tag.usageCount}</TableCell>
                               <TableCell className="text-right">
                                 <div className="flex justify-end gap-2">
@@ -722,6 +748,13 @@ export default function AdminPage() {
                                   <span className="text-sm">{tag.forcedPromptTags}</span>
                                 ) : (
                                   <span className="text-muted-foreground text-sm">None</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {tag.nsfw ? (
+                                  <Badge variant="destructive" className="text-xs">NSFW</Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-xs bg-green-500/10 text-green-700 hover:bg-green-500/20 border-green-200">Safe</Badge>
                                 )}
                               </TableCell>
                               <TableCell>{tag.usageCount}</TableCell>
