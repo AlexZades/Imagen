@@ -878,20 +878,6 @@ function CreateForm() {
                     </div>
                   )}
 
-                  <div className="space-y-2">
-                    <Label htmlFor="promptTags">Prompt Tags</Label>
-                    <Input
-                      id="promptTags"
-                      placeholder="e.g., 1girl, standing, outdoors, smile"
-                      value={promptTags}
-                      onChange={(e) => setPromptTags(e.target.value)}
-                      disabled={isGenerating}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Describe the image you want to generate using comma-separated tags
-                    </p>
-                  </div>
-
                   <div className="space-y-4 border-t pt-4">
                     <Label>Characters</Label>
                     
@@ -959,6 +945,20 @@ function CreateForm() {
                         />
                       </div>
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="promptTags">Prompt Tags</Label>
+                    <Input
+                      id="promptTags"
+                      placeholder="e.g., 1girl, standing, outdoors, smile"
+                      value={promptTags}
+                      onChange={(e) => setPromptTags(e.target.value)}
+                      disabled={isGenerating}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Describe the image you want to generate using comma-separated tags
+                    </p>
                   </div>
 
                   <Button
