@@ -41,10 +41,16 @@ async function upgradeDatabase() {
     
     // Image columns
     await addColumnIfNotExists('Image', 'content_rating', "TEXT NOT NULL DEFAULT 'safe'");
+    await addColumnIfNotExists('Image', 'male_character_tags', 'TEXT');
+    await addColumnIfNotExists('Image', 'female_character_tags', 'TEXT');
+    await addColumnIfNotExists('Image', 'other_character_tags', 'TEXT');
     
     // Tag columns
     await addColumnIfNotExists('Tag', 'forcedPromptTags', 'TEXT');
     await addColumnIfNotExists('Tag', 'nsfw', 'BOOLEAN NOT NULL DEFAULT false');
+    await addColumnIfNotExists('Tag', 'male_character_tags', 'TEXT');
+    await addColumnIfNotExists('Tag', 'female_character_tags', 'TEXT');
+    await addColumnIfNotExists('Tag', 'other_character_tags', 'TEXT');
 
     // 3. Ensure SimpleTag table exists
     const simpleTagExists = await tableExists('SimpleTag');
