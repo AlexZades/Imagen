@@ -22,10 +22,16 @@ export interface GenerationConfig {
   // Mixed recommendations settings
   mixedPoolSize: number; // 2-3
   mixedTagMixProbability: number;
+  mixedSameCharacterCountProbability: number; // 0-1
   
   // Random settings
   randomMinTags: number;
   randomMaxTags: number;
+  randomUseCharacterProbability: number; // 0-1
+  random1CharProbability: number;
+  random2CharProbability: number;
+  random3CharProbability: number;
+  random4CharProbability: number;
   
   // Style settings
   styleVariationProbability: number;
@@ -41,6 +47,9 @@ interface Tag {
   minStrength?: number;
   maxStrength?: number;
   forcedPromptTags?: string;
+  maleCharacterTags?: string;
+  femaleCharacterTags?: string;
+  otherCharacterTags?: string;
 }
 
 interface Style {
@@ -53,11 +62,14 @@ export interface UserPreferenceProfile {
   userId: string;
   likedImages: Array<{
     imageId: string;
-    tags: Array<{ id: string; name: string; loras?: string[]; minStrength?: number; maxStrength?: number }>;
+    tags: Array<{ id: string; name: string; loras?: string[]; minStrength?: number; maxStrength?: number; maleCharacterTags?: string; femaleCharacterTags?: string; otherCharacterTags?: string }>;
     style: { id: string; name: string; checkpointName?: string } | null;
     simpleTags: string[];
     width: number;
     height: number;
+    maleCharacterTags?: string;
+    femaleCharacterTags?: string;
+    otherCharacterTags?: string;
   }>;
   tagFrequency: Map<string, number>;
   styleFrequency: Map<string, number>;
@@ -77,6 +89,7 @@ export interface GenerationResult {
   tags: string[];
   style: string;
   aspectRatio: number;
+  characterPrompt?: string;
 }
 
 export interface GenerationReport {
@@ -121,9 +134,15 @@ export const DEFAULT_CONFIG: GenerationConfig = {
   
   mixedPoolSize: 2,
   mixedTagMixProbability: 0.6,
+  mixedSameCharacterCountProbability: 0.5,
   
   randomMinTags: 1,
   randomMaxTags: 3,
+  randomUseCharacterProbability: 0.3,
+  random1CharProbability: 0.6,
+  random2CharProbability: 0.3,
+  random3CharProbability: 0.08,
+  random4CharProbability: 0.02,
   
   styleVariationProbability: 0.3,
   
@@ -285,6 +304,9 @@ export async function buildUserPreferenceProfile(userId: string): Promise<UserPr
         loras: it.tag.loras,
         minStrength: it.tag.minStrength ?? undefined,
         maxStrength: it.tag.maxStrength ?? undefined,
+        maleCharacterTags: it.tag.maleCharacterTags,
+        femaleCharacterTags: it.tag.femaleCharacterTags,
+        otherCharacterTags: it.tag.otherCharacterTags,
       })),
       style: like.image.imageStyles[0]
         ? {
@@ -298,6 +320,9 @@ export async function buildUserPreferenceProfile(userId: string): Promise<UserPr
         : [],
       width: like.image.width || 1024,
       height: like.image.height || 1024,
+      maleCharacterTags: like.image.maleCharacterTags,
+      femaleCharacterTags: like.image.femaleCharacterTags,
+      otherCharacterTags: like.image.otherCharacterTags,
     }));
 
     const tagFrequency = new Map<string, number>();
@@ -358,6 +383,63 @@ export async function buildUserPreferenceProfile(userId: string): Promise<UserPr
     console.error('Error building user preference profile:', error);
     return null;
   }
+}
+
+// ==================== Character Utilities ====================
+
+interface CharacterInfo {
+  males: string[];
+  females: string[];
+  others: string[];
+  count: number;
+}
+
+function extractCharactersFromImage(image: any): CharacterInfo {
+  const males: string[] = [];
+  const females: string[] = [];
+  const others: string[] = [];
+
+  // Get from explicit image columns
+  if (image.maleCharacterTags) males.push(...image.maleCharacterTags.split(',').map((s: string) => s.trim()).filter(Boolean));
+  if (image.femaleCharacterTags) females.push(...image.femaleCharacterTags.split(',').map((s: string) => s.trim()).filter(Boolean));
+  if (image.otherCharacterTags) others.push(...image.otherCharacterTags.split(',').map((s: string) => s.trim()).filter(Boolean));
+
+  // Also gather from tags (if any)
+  if (image.tags) {
+    image.tags.forEach((tag: Tag) => {
+       if (tag.maleCharacterTags) males.push(...tag.maleCharacterTags.split(',').map(s => s.trim()).filter(Boolean));
+       if (tag.femaleCharacterTags) females.push(...tag.femaleCharacterTags.split(',').map(s => s.trim()).filter(Boolean));
+       if (tag.otherCharacterTags) others.push(...tag.otherCharacterTags.split(',').map(s => s.trim()).filter(Boolean));
+    });
+  }
+
+  // Deduplicate
+  return {
+    males: Array.from(new Set(males)),
+    females: Array.from(new Set(females)),
+    others: Array.from(new Set(others)),
+    count: new Set([...males, ...females, ...others]).size
+  };
+}
+
+function buildCharacterPrompt(info: CharacterInfo): string {
+  const parts: string[] = [];
+  
+  if (info.males.length > 0) {
+    parts.push(info.males.length === 1 ? "1boy" : `${info.males.length}boys`);
+    parts.push(info.males.join(', '));
+  }
+  
+  if (info.females.length > 0) {
+    parts.push(info.females.length === 1 ? "1girl" : `${info.females.length}girls`);
+    parts.push(info.females.join(', '));
+  }
+  
+  if (info.others.length > 0) {
+    parts.push(info.others.join(', '));
+  }
+  
+  return parts.join(', ');
 }
 
 // ==================== Random Selection Utilities ====================
@@ -421,9 +503,13 @@ async function generateCloseRecommendation(
   config: GenerationConfig,
   allTags: Tag[],
   allStyles: Style[]
-): Promise<{ tags: Tag[]; style: Style; simpleTags: string[]; loraWeights: number[]; aspectRatio: number }> {
+): Promise<{ tags: Tag[]; style: Style; simpleTags: string[]; loraWeights: number[]; aspectRatio: number; characterPrompt: string }> {
   const baseImage = randomChoice(profile.likedImages);
   
+  // Character logic: keep characters from base image
+  const charInfo = extractCharactersFromImage(baseImage);
+  const characterPrompt = buildCharacterPrompt(charInfo);
+
   let selectedTags = [...baseImage.tags] as Tag[];
   let selectedSimpleTags = [...baseImage.simpleTags];
   
@@ -482,6 +568,7 @@ async function generateCloseRecommendation(
     simpleTags: selectedSimpleTags,
     loraWeights,
     aspectRatio,
+    characterPrompt,
   };
 }
 
@@ -490,10 +577,49 @@ async function generateMixedRecommendation(
   config: GenerationConfig,
   allTags: Tag[],
   allStyles: Style[]
-): Promise<{ tags: Tag[]; style: Style; simpleTags: string[]; loraWeights: number[]; aspectRatio: number }> {
+): Promise<{ tags: Tag[]; style: Style; simpleTags: string[]; loraWeights: number[]; aspectRatio: number; characterPrompt: string }> {
   const poolSize = Math.min(config.mixedPoolSize, profile.likedImages.length);
   const sourceImages = randomChoices(profile.likedImages, poolSize);
   
+  // Character logic for Mixed
+  // 1. Determine target number of characters
+  const firstImageChars = extractCharactersFromImage(sourceImages[0]);
+  const secondImageChars = sourceImages.length > 1 ? extractCharactersFromImage(sourceImages[1]) : firstImageChars;
+  
+  const useFirstCount = rollDice(config.mixedSameCharacterCountProbability);
+  const targetCount = useFirstCount ? firstImageChars.count : secondImageChars.count;
+  
+  // 2. Pool all characters
+  const allMales = new Set<string>();
+  const allFemales = new Set<string>();
+  const allOthers = new Set<string>();
+  
+  sourceImages.forEach(img => {
+    const info = extractCharactersFromImage(img);
+    info.males.forEach(c => allMales.add(c));
+    info.females.forEach(c => allFemales.add(c));
+    info.others.forEach(c => allOthers.add(c));
+  });
+  
+  // 3. Select targetCount characters randomly from the pool
+  const pool = [
+    ...Array.from(allMales).map(c => ({ name: c, type: 'male' })),
+    ...Array.from(allFemales).map(c => ({ name: c, type: 'female' })),
+    ...Array.from(allOthers).map(c => ({ name: c, type: 'other' }))
+  ];
+  
+  const selectedChars = randomChoices(pool, targetCount || 1); // Ensure at least 1 if count was 0 but we want to mix? No, if 0 keep 0.
+  // Actually if targetCount is 0, we should probably output 0 characters.
+  
+  const finalCharInfo: CharacterInfo = {
+    males: selectedChars.filter(c => c.type === 'male').map(c => c.name),
+    females: selectedChars.filter(c => c.type === 'female').map(c => c.name),
+    others: selectedChars.filter(c => c.type === 'other').map(c => c.name),
+    count: selectedChars.length
+  };
+  
+  const characterPrompt = buildCharacterPrompt(finalCharInfo);
+
   const pooledTags = sourceImages.flatMap((img: any) => img.tags);
   const pooledSimpleTags = sourceImages.flatMap((img: any) => img.simpleTags);
   
@@ -533,6 +659,7 @@ async function generateMixedRecommendation(
     simpleTags: selectedSimpleTags,
     loraWeights,
     aspectRatio,
+    characterPrompt,
   };
 }
 
@@ -540,7 +667,52 @@ async function generateRandomImage(
   config: GenerationConfig,
   allTags: Tag[],
   allStyles: Style[]
-): Promise<{ tags: Tag[]; style: Style; simpleTags: string[]; loraWeights: number[]; aspectRatio: number }> {
+): Promise<{ tags: Tag[]; style: Style; simpleTags: string[]; loraWeights: number[]; aspectRatio: number; characterPrompt: string }> {
+  // Character Logic for Random
+  let characterPrompt = "";
+  
+  if (rollDice(config.randomUseCharacterProbability)) {
+    // Determine count based on weights
+    const countWeights = [
+      config.random1CharProbability, 
+      config.random2CharProbability, 
+      config.random3CharProbability, 
+      config.random4CharProbability
+    ];
+    const choices = [1, 2, 3, 4];
+    const targetCount = weightedRandomChoice(choices, countWeights);
+    
+    // Pool all characters from allTags
+    const allMales = new Set<string>();
+    const allFemales = new Set<string>();
+    const allOthers = new Set<string>();
+    
+    allTags.forEach(tag => {
+       if (tag.maleCharacterTags) tag.maleCharacterTags.split(',').forEach(s => allMales.add(s.trim()));
+       if (tag.femaleCharacterTags) tag.femaleCharacterTags.split(',').forEach(s => allFemales.add(s.trim()));
+       if (tag.otherCharacterTags) tag.otherCharacterTags.split(',').forEach(s => allOthers.add(s.trim()));
+    });
+    
+    const pool = [
+      ...Array.from(allMales).map(c => ({ name: c, type: 'male' })),
+      ...Array.from(allFemales).map(c => ({ name: c, type: 'female' })),
+      ...Array.from(allOthers).map(c => ({ name: c, type: 'other' }))
+    ];
+    
+    if (pool.length > 0) {
+      const selectedChars = randomChoices(pool, targetCount);
+      
+      const finalCharInfo: CharacterInfo = {
+        males: selectedChars.filter(c => c.type === 'male').map(c => c.name),
+        females: selectedChars.filter(c => c.type === 'female').map(c => c.name),
+        others: selectedChars.filter(c => c.type === 'other').map(c => c.name),
+        count: selectedChars.length
+      };
+      
+      characterPrompt = buildCharacterPrompt(finalCharInfo);
+    }
+  }
+
   const useMultipleTags = rollDice(config.multiTagProbability);
   const numTags = useMultipleTags
     ? randomInt(2, Math.min(config.maxTagsPerImage, 4))
@@ -564,6 +736,7 @@ async function generateRandomImage(
     simpleTags: selectedSimpleTags,
     loraWeights,
     aspectRatio,
+    characterPrompt,
   };
 }
 
@@ -708,7 +881,7 @@ export async function generateImagesForUser(
     if (profile && profile.likedImages.length >= 2) {
       for (let i = 0; i < config.closeRecommendationsCount; i++) {
         try {
-          const { tags, style, simpleTags, loraWeights, aspectRatio } = await generateCloseRecommendation(
+          const { tags, style, simpleTags, loraWeights, aspectRatio, characterPrompt } = await generateCloseRecommendation(
             profile,
             config,
             allTags,
@@ -724,7 +897,9 @@ export async function generateImagesForUser(
 
           const tagNames = tags.map((t: Tag) => t.name).join(', ');
           const simpleTagsStr = simpleTags.join(', ');
-          const fullPrompt = tagNames ? `${tagNames}, ${simpleTagsStr}` : simpleTagsStr;
+          // Combine prompt with characters
+          const parts = [characterPrompt, tagNames, simpleTagsStr].filter(Boolean);
+          const fullPrompt = parts.join(', ');
 
           const base64Image = await callComfyUIAPI(
             fullPrompt,
@@ -773,7 +948,7 @@ export async function generateImagesForUser(
     if (profile && profile.likedImages.length >= 2) {
       for (let i = 0; i < config.mixedRecommendationsCount; i++) {
         try {
-          const { tags, style, simpleTags, loraWeights, aspectRatio } = await generateMixedRecommendation(
+          const { tags, style, simpleTags, loraWeights, aspectRatio, characterPrompt } = await generateMixedRecommendation(
             profile,
             config,
             allTags,
@@ -789,7 +964,9 @@ export async function generateImagesForUser(
 
           const tagNames = tags.map((t: Tag) => t.name).join(', ');
           const simpleTagsStr = simpleTags.join(', ');
-          const fullPrompt = tagNames ? `${tagNames}, ${simpleTagsStr}` : simpleTagsStr;
+          // Combine prompt with characters
+          const parts = [characterPrompt, tagNames, simpleTagsStr].filter(Boolean);
+          const fullPrompt = parts.join(', ');
 
           const base64Image = await callComfyUIAPI(
             fullPrompt,
@@ -837,7 +1014,7 @@ export async function generateImagesForUser(
 
     for (let i = 0; i < config.randomCount; i++) {
       try {
-        const { tags, style, simpleTags, loraWeights, aspectRatio } = await generateRandomImage(
+        const { tags, style, simpleTags, loraWeights, aspectRatio, characterPrompt } = await generateRandomImage(
           config,
           allTags,
           allStyles
@@ -852,7 +1029,9 @@ export async function generateImagesForUser(
 
         const tagNames = tags.map((t: Tag) => t.name).join(', ');
         const simpleTagsStr = simpleTags.join(', ');
-        const fullPrompt = tagNames ? `${tagNames}, ${simpleTagsStr}` : simpleTagsStr;
+        // Combine prompt with characters
+        const parts = [characterPrompt, tagNames, simpleTagsStr].filter(Boolean);
+        const fullPrompt = parts.join(', ');
 
         const base64Image = await callComfyUIAPI(
           fullPrompt,

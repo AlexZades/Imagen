@@ -24,8 +24,14 @@ interface GenerationConfig {
   closeMaxSwaps: number;
   mixedPoolSize: number;
   mixedTagMixProbability: number;
+  mixedSameCharacterCountProbability: number;
   randomMinTags: number;
   randomMaxTags: number;
+  randomUseCharacterProbability: number;
+  random1CharProbability: number;
+  random2CharProbability: number;
+  random3CharProbability: number;
+  random4CharProbability: number;
   styleVariationProbability: number;
   loraWeightVariation: number;
 }
@@ -43,8 +49,14 @@ const DEFAULT_CONFIG: GenerationConfig = {
   closeMaxSwaps: 2,
   mixedPoolSize: 2,
   mixedTagMixProbability: 0.6,
+  mixedSameCharacterCountProbability: 0.5,
   randomMinTags: 1,
   randomMaxTags: 3,
+  randomUseCharacterProbability: 0.3,
+  random1CharProbability: 0.6,
+  random2CharProbability: 0.3,
+  random3CharProbability: 0.08,
+  random4CharProbability: 0.02,
   styleVariationProbability: 0.3,
   loraWeightVariation: 0.5,
 };
@@ -344,6 +356,17 @@ export function GenerationSettings({ userId }: { userId: string }) {
                   isPercentage
                   tooltip="Probability of mixing tags from different source images"
                 />
+
+                <SettingInput
+                  label="Same Char Count Prob."
+                  value={config.mixedSameCharacterCountProbability}
+                  onChange={(v) => updateConfig('mixedSameCharacterCountProbability', v)}
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  isPercentage
+                  tooltip="Probability of using the same number of characters as the first source image"
+                />
               </div>
 
               <div className="bg-muted p-4 rounded-lg">
@@ -376,6 +399,58 @@ export function GenerationSettings({ userId }: { userId: string }) {
                   step={1}
                   tooltip="Maximum number of simple tags for random images"
                 />
+
+                <SettingInput
+                  label="Use Character Prob."
+                  value={config.randomUseCharacterProbability}
+                  onChange={(v) => updateConfig('randomUseCharacterProbability', v)}
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  isPercentage
+                  tooltip="Probability that a random image will include specific characters"
+                />
+
+                <div className="col-span-2 grid grid-cols-4 gap-4 border p-4 rounded-md">
+                  <div className="col-span-4 font-medium mb-2">Random Character Count Weights (Relative)</div>
+                  
+                  <SettingInput
+                    label="1 Character"
+                    value={config.random1CharProbability}
+                    onChange={(v) => updateConfig('random1CharProbability', v)}
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    tooltip="Weight for choosing 1 character"
+                  />
+                  <SettingInput
+                    label="2 Characters"
+                    value={config.random2CharProbability}
+                    onChange={(v) => updateConfig('random2CharProbability', v)}
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    tooltip="Weight for choosing 2 characters"
+                  />
+                  <SettingInput
+                    label="3 Characters"
+                    value={config.random3CharProbability}
+                    onChange={(v) => updateConfig('random3CharProbability', v)}
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    tooltip="Weight for choosing 3 characters"
+                  />
+                  <SettingInput
+                    label="4 Characters"
+                    value={config.random4CharProbability}
+                    onChange={(v) => updateConfig('random4CharProbability', v)}
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    tooltip="Weight for choosing 4 characters"
+                  />
+                </div>
               </div>
 
               <div className="bg-muted p-4 rounded-lg">
