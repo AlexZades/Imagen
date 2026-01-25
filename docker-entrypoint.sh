@@ -10,20 +10,7 @@ if [ "$AUTO_MIGRATE" = "true" ]; then
     
     echo "Running database migrations..."
     # Run migrations
-    if ! ./node_modules/.bin/prisma migrate deploy; then
-        echo "⚠️  Migration failed. This often happens when the database state is inconsistent with the new migration history."
-        echo "🔄 Attempting to reset the database to apply the fresh schema..."
-        
-        # Run the reset script
-        if node scripts/reset-db.js; then
-            echo "✅ Database reset successful."
-            echo "🔄 Retrying migration..."
-            ./node_modules/.bin/prisma migrate deploy
-        else
-            echo "❌ Database reset failed. Please check the logs."
-            exit 1
-        fi
-    fi
+    ./node_modules/.bin/prisma migrate deploy
     echo "✅ Migrations complete!"
 else
     echo "⏭️  AUTO_MIGRATE disabled - skipping migrations"
