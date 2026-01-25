@@ -189,7 +189,12 @@ export default function ImageDetailPage() {
         if (reset) {
           setSimilarImages(newImages);
         } else {
-          setSimilarImages(prev => [...prev, ...newImages]);
+          // Deduplicate by ID before appending
+          setSimilarImages(prev => {
+            const existingIds = new Set(prev.map(img => img.id));
+            const uniqueNewImages = newImages.filter(img => !existingIds.has(img.id));
+            return [...prev, ...uniqueNewImages];
+          });
         }
       }
     } catch (error) {
