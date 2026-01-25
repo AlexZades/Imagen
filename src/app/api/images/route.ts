@@ -120,6 +120,9 @@ export async function POST(request: NextRequest) {
       size,
       tagIds,
       styleIds,
+      maleCharacterTags,
+      femaleCharacterTags,
+      otherCharacterTags,
     } = await request.json();
 
     if (!userId || !title || !imageUrl || !width || !height) {
@@ -145,6 +148,9 @@ export async function POST(request: NextRequest) {
           width,
           height,
           size,
+          maleCharacterTags,
+          femaleCharacterTags,
+          otherCharacterTags,
         }
       });
 

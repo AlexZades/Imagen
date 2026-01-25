@@ -38,6 +38,9 @@ interface Image {
   title: string;
   description?: string;
   promptTags?: string;
+  maleCharacterTags?: string;
+  femaleCharacterTags?: string;
+  otherCharacterTags?: string;
   imageUrl: string;
   thumbnailUrl?: string;
   width: number;
@@ -370,6 +373,15 @@ export default function ImageDetailPage() {
     ? image.promptTags.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0)
     : [];
 
+  // Combine character tags
+  const allCharacters = [
+    image.maleCharacterTags,
+    image.femaleCharacterTags,
+    image.otherCharacterTags
+  ].filter(Boolean).join(',').split(',').map(t => t.trim()).filter(Boolean);
+  
+  const uniqueCharacters = Array.from(new Set(allCharacters));
+
   const isOwner = user && user.id === image.userId;
   const isAdmin = user?.isAdmin === true;
 
@@ -537,6 +549,21 @@ export default function ImageDetailPage() {
                     <Link key={index} href={`/search?simpleTag=${encodeURIComponent(tag)}`}>
                       <Badge variant="default" className="cursor-pointer hover:bg-primary/80">
                         {tag}
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {uniqueCharacters.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-2">Characters</h3>
+                <div className="flex flex-wrap gap-2">
+                  {uniqueCharacters.map((char, index) => (
+                    <Link key={index} href={`/search?simpleTag=${encodeURIComponent(char)}`}>
+                      <Badge variant="outline" className="cursor-pointer hover:bg-muted border-primary/20 text-primary">
+                        {char}
                       </Badge>
                     </Link>
                   ))}

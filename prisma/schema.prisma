@@ -40,6 +40,11 @@ model Image {
   width             Int
   height            Int
   size              Int?
+  
+  maleCharacterTags   String? @map("male_character_tags")
+  femaleCharacterTags String? @map("female_character_tags")
+  otherCharacterTags  String? @map("other_character_tags")
+
   createdAt         DateTime @default(now())
   viewCount         Int      @default(0)
   likeCount         Int      @default(0)
@@ -64,6 +69,10 @@ model Tag {
   nsfw             Boolean  @default(false)
   usageCount       Int      @default(0)
   createdAt        DateTime @default(now())
+
+  maleCharacterTags   String? @map("male_character_tags")
+  femaleCharacterTags String? @map("female_character_tags")
+  otherCharacterTags  String? @map("other_character_tags")
 
   imageTags ImageTag[]
 }

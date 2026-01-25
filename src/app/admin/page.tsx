@@ -49,6 +49,9 @@ interface Tag {
   maxStrength?: number;
   forcedPromptTags?: string;
   nsfw?: boolean;
+  maleCharacterTags?: string;
+  femaleCharacterTags?: string;
+  otherCharacterTags?: string;
 }
 
 interface Style {
@@ -84,6 +87,9 @@ export default function AdminPage() {
   const [newTagMaxStrength, setNewTagMaxStrength] = useState<number>(1);
   const [newTagForcedPromptTags, setNewTagForcedPromptTags] = useState('');
   const [newTagNsfw, setNewTagNsfw] = useState(false);
+  const [newTagMaleTags, setNewTagMaleTags] = useState('');
+  const [newTagFemaleTags, setNewTagFemaleTags] = useState('');
+  const [newTagOtherTags, setNewTagOtherTags] = useState('');
 
   // New style dialog state
   const [isNewStyleDialogOpen, setIsNewStyleDialogOpen] = useState(false);
@@ -137,6 +143,9 @@ export default function AdminPage() {
       maxStrength: tag.maxStrength,
       forcedPromptTags: tag.forcedPromptTags,
       nsfw: tag.nsfw,
+      maleCharacterTags: tag.maleCharacterTags,
+      femaleCharacterTags: tag.femaleCharacterTags,
+      otherCharacterTags: tag.otherCharacterTags,
     });
   };
 
@@ -189,6 +198,9 @@ export default function AdminPage() {
           maxStrength: editTagData.maxStrength,
           forcedPromptTags: editTagData.forcedPromptTags,
           nsfw: editTagData.nsfw,
+          maleCharacterTags: editTagData.maleCharacterTags,
+          femaleCharacterTags: editTagData.femaleCharacterTags,
+          otherCharacterTags: editTagData.otherCharacterTags,
         }),
       });
 
@@ -314,6 +326,9 @@ export default function AdminPage() {
           maxStrength: newTagMaxStrength,
           forcedPromptTags: newTagForcedPromptTags.trim() || undefined,
           nsfw: newTagNsfw,
+          maleCharacterTags: newTagMaleTags.trim() || undefined,
+          femaleCharacterTags: newTagFemaleTags.trim() || undefined,
+          otherCharacterTags: newTagOtherTags.trim() || undefined,
         }),
       });
 
@@ -330,6 +345,9 @@ export default function AdminPage() {
       setNewTagMaxStrength(1);
       setNewTagForcedPromptTags('');
       setNewTagNsfw(false);
+      setNewTagMaleTags('');
+      setNewTagFemaleTags('');
+      setNewTagOtherTags('');
       fetchData();
     } catch (error) {
       toast.error('Failed to create tag');
@@ -562,6 +580,39 @@ export default function AdminPage() {
                           </p>
                         </div>
                         
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="newTagMaleTags">Male Character Tags</Label>
+                            <Input
+                              id="newTagMaleTags"
+                              value={newTagMaleTags}
+                              onChange={(e) => setNewTagMaleTags(e.target.value)}
+                              placeholder="e.g. 1boy"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="newTagFemaleTags">Female Character Tags</Label>
+                            <Input
+                              id="newTagFemaleTags"
+                              value={newTagFemaleTags}
+                              onChange={(e) => setNewTagFemaleTags(e.target.value)}
+                              placeholder="e.g. 1girl"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="newTagOtherTags">Other Character Tags</Label>
+                            <Input
+                              id="newTagOtherTags"
+                              value={newTagOtherTags}
+                              onChange={(e) => setNewTagOtherTags(e.target.value)}
+                              placeholder="e.g. 1robot"
+                            />
+                          </div>
+                          <p className="col-span-3 text-xs text-muted-foreground">
+                            These tags will be added to the character count boxes when selected
+                          </p>
+                        </div>
+                        
                         <div className="flex items-center space-x-2 pt-2">
                           <Switch
                             id="newTagNsfw"
@@ -590,6 +641,7 @@ export default function AdminPage() {
                       <TableHead>LoRAs</TableHead>
                       <TableHead>Strength Range</TableHead>
                       <TableHead>Forced Tags</TableHead>
+                      <TableHead>Character Tags</TableHead>
                       <TableHead>NSFW</TableHead>
                       <TableHead>Usage</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -598,7 +650,7 @@ export default function AdminPage() {
                   <TableBody>
                     {tags.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                           No tags found. Create your first tag to get started.
                         </TableCell>
                       </TableRow>
@@ -695,6 +747,34 @@ export default function AdminPage() {
                                 />
                               </TableCell>
                               <TableCell>
+                                <div className="space-y-2 min-w-[200px]">
+                                  <Input
+                                    value={editTagData.maleCharacterTags || ''}
+                                    onChange={(e) =>
+                                      setEditTagData({ ...editTagData, maleCharacterTags: e.target.value })
+                                    }
+                                    placeholder="Male tags"
+                                    className="h-8"
+                                  />
+                                  <Input
+                                    value={editTagData.femaleCharacterTags || ''}
+                                    onChange={(e) =>
+                                      setEditTagData({ ...editTagData, femaleCharacterTags: e.target.value })
+                                    }
+                                    placeholder="Female tags"
+                                    className="h-8"
+                                  />
+                                  <Input
+                                    value={editTagData.otherCharacterTags || ''}
+                                    onChange={(e) =>
+                                      setEditTagData({ ...editTagData, otherCharacterTags: e.target.value })
+                                    }
+                                    placeholder="Other tags"
+                                    className="h-8"
+                                  />
+                                </div>
+                              </TableCell>
+                              <TableCell>
                                 <Switch
                                   checked={editTagData.nsfw || false}
                                   onCheckedChange={(checked) =>
@@ -749,6 +829,16 @@ export default function AdminPage() {
                                 ) : (
                                   <span className="text-muted-foreground text-sm">None</span>
                                 )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="space-y-1">
+                                  {tag.maleCharacterTags && <div className="text-xs"><span className="font-semibold text-blue-500">M:</span> {tag.maleCharacterTags}</div>}
+                                  {tag.femaleCharacterTags && <div className="text-xs"><span className="font-semibold text-pink-500">F:</span> {tag.femaleCharacterTags}</div>}
+                                  {tag.otherCharacterTags && <div className="text-xs"><span className="font-semibold text-purple-500">O:</span> {tag.otherCharacterTags}</div>}
+                                  {!tag.maleCharacterTags && !tag.femaleCharacterTags && !tag.otherCharacterTags && (
+                                    <span className="text-muted-foreground text-sm">None</span>
+                                  )}
+                                </div>
                               </TableCell>
                               <TableCell>
                                 {tag.nsfw ? (

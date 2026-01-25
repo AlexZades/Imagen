@@ -72,7 +72,7 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const { userId, title, description, promptTags } = await request.json();
+    const { userId, title, description, promptTags, maleCharacterTags, femaleCharacterTags, otherCharacterTags } = await request.json();
 
     if (!userId) {
       return NextResponse.json(
@@ -105,6 +105,9 @@ export async function PATCH(
         ...(title !== undefined && { title }),
         ...(description !== undefined && { description }),
         ...(promptTags !== undefined && { promptTags }),
+        ...(maleCharacterTags !== undefined && { maleCharacterTags }),
+        ...(femaleCharacterTags !== undefined && { femaleCharacterTags }),
+        ...(otherCharacterTags !== undefined && { otherCharacterTags }),
       }
     });
 

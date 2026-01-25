@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, loras, minStrength, maxStrength, forcedPromptTags, nsfw } = await request.json();
+    const { name, loras, minStrength, maxStrength, forcedPromptTags, nsfw, maleCharacterTags, femaleCharacterTags, otherCharacterTags } = await request.json();
 
     if (!name) {
       return NextResponse.json({ message: 'Tag name is required' }, { status: 400 });
@@ -62,6 +62,9 @@ export async function POST(request: NextRequest) {
         maxStrength,
         forcedPromptTags,
         nsfw: nsfw || false,
+        maleCharacterTags,
+        femaleCharacterTags,
+        otherCharacterTags,
       }
     });
 

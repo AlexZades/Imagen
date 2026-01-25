@@ -25,6 +25,9 @@ interface Tag {
   minStrength?: number;
   maxStrength?: number;
   forcedPromptTags?: string;
+  maleCharacterTags?: string;
+  femaleCharacterTags?: string;
+  otherCharacterTags?: string;
 }
 
 interface Style {
@@ -47,6 +50,9 @@ export function TestGenerator() {
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [selectedStyleId, setSelectedStyleId] = useState<string>('');
   const [promptTags, setPromptTags] = useState('');
+  const [maleTags, setMaleTags] = useState('');
+  const [femaleTags, setFemaleTags] = useState('');
+  const [otherTags, setOtherTags] = useState('');
   const [loraConfigs, setLoraConfigs] = useState<LoraConfig[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -89,6 +95,22 @@ export function TestGenerator() {
     
     setLoraConfigs(newConfigs);
   }, [selectedTagIds, tags]);
+
+  // Derived state for locked character tags
+  const lockedMaleTags = selectedTagIds
+    .map(id => tags.find(t => t.id === id)?.maleCharacterTags)
+    .filter(Boolean)
+    .join(', ');
+  
+  const lockedFemaleTags = selectedTagIds
+    .map(id => tags.find(t => t.id === id)?.femaleCharacterTags)
+    .filter(Boolean)
+    .join(', ');
+
+  const lockedOtherTags = selectedTagIds
+    .map(id => tags.find(t => t.id === id)?.otherCharacterTags)
+    .filter(Boolean)
+    .join(', ');
 
   const fetchData = async () => {
     try {
@@ -137,8 +159,8 @@ export function TestGenerator() {
       return;
     }
 
-    if (!promptTags.trim()) {
-      toast.error('Please enter prompt tags');
+    if (!promptTags.trim() && !maleTags && !femaleTags && !otherTags && !lockedMaleTags && !lockedFemaleTags && !lockedOtherTags) {
+      toast.error('Please enter prompt tags or characters');
       return;
     }
 
@@ -154,6 +176,32 @@ export function TestGenerator() {
       const loraNames = loraConfigs.map(config => config.name);
       const loraWeights = loraConfigs.map(config => config.weight);
 
+      // Construct character strings
+      const allMaleTags = [lockedMaleTags, maleTags].filter(t => t && t.trim()).join(', ');
+      const allFemaleTags = [lockedFemaleTags, femaleTags].filter(t => t && t.trim()).join(', ');
+      const allOtherTags = [lockedOtherTags, otherTags].filter(t => t && t.trim()).join(', ');
+
+      const maleCount = allMaleTags ? allMaleTags.split(',').length : 0;
+      const femaleCount = allFemaleTags ? allFemaleTags.split(',').length : 0;
+
+      let characterPromptParts: string[] = [];
+
+      if (maleCount > 0) {
+        characterPromptParts.push(maleCount === 1 ? "1boy" : `${maleCount}boys`);
+        characterPromptParts.push(allMaleTags);
+      }
+
+      if (femaleCount > 0) {
+        characterPromptParts.push(femaleCount === 1 ? "1girl" : `${femaleCount}girls`);
+        characterPromptParts.push(allFemaleTags);
+      }
+
+      if (allOtherTags) {
+        characterPromptParts.push(allOtherTags);
+      }
+
+      const characterPrompt = characterPromptParts.join(', ');
+
       // Collect forced prompt tags from selected tags
       const forcedTags: string[] = [];
       selectedTagIds.forEach(tagId => {
@@ -163,10 +211,16 @@ export function TestGenerator() {
         }
       });
 
-      // Combine user prompt tags with forced tags
-      const allPromptTags = forcedTags.length > 0 
-        ? `${forcedTags.join(', ')}, ${promptTags}`
-        : promptTags;
+      // Combine user prompt tags with forced tags and character tags
+      let allPromptTags = promptTags;
+      
+      if (characterPrompt) {
+        allPromptTags = `${characterPrompt}, ${allPromptTags}`;
+      }
+      
+      if (forcedTags.length > 0) {
+        allPromptTags = `${forcedTags.join(', ')}, ${allPromptTags}`;
+      }
 
       const response = await fetch('/api/generate', {
         method: 'POST',
@@ -259,6 +313,10 @@ export function TestGenerator() {
       const uploadData = await uploadResponse.json();
       const { image: processedImage } = uploadData;
 
+      const allMaleTags = [lockedMaleTags, maleTags].filter(t => t && t.trim()).join(', ');
+      const allFemaleTags = [lockedFemaleTags, femaleTags].filter(t => t && t.trim()).join(', ');
+      const allOtherTags = [lockedOtherTags, otherTags].filter(t => t && t.trim()).join(', ');
+
       // Create the image record in the database
       const createResponse = await fetch('/api/images', {
         method: 'POST',
@@ -268,6 +326,9 @@ export function TestGenerator() {
           title: imageTitle,
           description: imageDescription || undefined,
           promptTags: promptTags.trim() || undefined,
+          maleCharacterTags: allMaleTags || undefined,
+          femaleCharacterTags: allFemaleTags || undefined,
+          otherCharacterTags: allOtherTags || undefined,
           imageUrl: processedImage.imageUrl,
           thumbnailUrl: processedImage.thumbnailUrl,
           filename: processedImage.filename,
@@ -292,6 +353,9 @@ export function TestGenerator() {
       setImageTitle('');
       setImageDescription('');
       setPromptTags('');
+      setMaleTags('');
+      setFemaleTags('');
+      setOtherTags('');
       setSelectedTagIds([]);
       setSelectedStyleId('');
       setLoraConfigs([]);
@@ -452,6 +516,69 @@ export function TestGenerator() {
           <p className="text-xs text-muted-foreground">
             These will be combined with any forced tags from selected tags
           </p>
+        </div>
+
+        <div className="space-y-4 border-t pt-4">
+          <Label>Characters</Label>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="maleTags" className="text-xs text-muted-foreground">Male Characters</Label>
+              {lockedMaleTags && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {lockedMaleTags.split(',').map((tag, i) => (
+                    <Badge key={i} variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-200">
+                      {tag.trim()}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <Input
+                id="maleTags"
+                placeholder="e.g. John, Bob"
+                value={maleTags}
+                onChange={(e) => setMaleTags(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="femaleTags" className="text-xs text-muted-foreground">Female Characters</Label>
+              {lockedFemaleTags && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {lockedFemaleTags.split(',').map((tag, i) => (
+                    <Badge key={i} variant="secondary" className="bg-pink-100 text-pink-800 hover:bg-pink-200 border-pink-200">
+                      {tag.trim()}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <Input
+                id="femaleTags"
+                placeholder="e.g. Alice, Mary"
+                value={femaleTags}
+                onChange={(e) => setFemaleTags(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="otherTags" className="text-xs text-muted-foreground">Other Characters</Label>
+              {lockedOtherTags && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {lockedOtherTags.split(',').map((tag, i) => (
+                    <Badge key={i} variant="secondary" className="bg-purple-100 text-purple-800 hover:bg-purple-200 border-purple-200">
+                      {tag.trim()}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <Input
+                id="otherTags"
+                placeholder="e.g. Robot, Alien"
+                value={otherTags}
+                onChange={(e) => setOtherTags(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
 
         <Button
