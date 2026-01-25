@@ -109,7 +109,7 @@ export default function AdminPage() {
   const fetchData = async () => {
     try {
       const [tagsRes, stylesRes] = await Promise.all([
-        fetch('/api/tags'),
+        fetch('/api/tags?nsfw=true'),
         fetch('/api/styles'),
       ]);
 
