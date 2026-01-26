@@ -24,7 +24,6 @@ model User {
 
   images Image[]
   likes  Like[]
-  accessKey AccessKey?
 }
 
 model Image {
@@ -152,14 +151,4 @@ model SimpleTag {
 
   @@index([usageCount])
   @@index([category])
-}
-
-model AccessKey {
-  id        String    @id @default(cuid())
-  key       String    @unique
-  redeemed  Boolean   @default(false)
-  userId    String?   @unique
-  redeemedAt DateTime?
-
-  user      User?     @relation(fields: [userId], references: [id])
 }

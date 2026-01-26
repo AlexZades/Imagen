@@ -16,20 +16,9 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [accessKey, setAccessKey] = useState('');
-  const [accessKeysEnabled, setAccessKeysEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
   const router = useRouter();
-
-  React.useEffect(() => {
-    fetch('/api/auth/config')
-      .then((res) => res.json())
-      .then((data) => {
-        setAccessKeysEnabled(data.accessKeysEnabled);
-      })
-      .catch((err) => console.error('Failed to load auth config:', err));
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,15 +28,10 @@ export default function RegisterPage() {
       return;
     }
 
-    if (accessKeysEnabled && !accessKey) {
-      toast.error('Access key is required');
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      await register(username, email, password, accessKey);
+      await register(username, email, password);
       toast.success('Account created successfully!');
       router.push('/');
     } catch (error: any) {
@@ -90,20 +74,6 @@ export default function RegisterPage() {
                   required
                 />
               </div>
-
-              {accessKeysEnabled && (
-                <div className="space-y-2">
-                  <Label htmlFor="accessKey">Access Key</Label>
-                  <Input
-                    id="accessKey"
-                    type="text"
-                    value={accessKey}
-                    onChange={(e) => setAccessKey(e.target.value)}
-                    required
-                    placeholder="Enter your invitation code"
-                  />
-                </div>
-              )}
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
