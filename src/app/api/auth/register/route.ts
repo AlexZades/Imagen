@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     const isFirstUser = userCount === 0;
 
     // Check Access Key Requirement
-    const accessKeysEnabled = process.env.ENABLE_ACCESS_KEYS === 'true';
+    const accessKeysEnabled = process.env.ENABLE_ACCESS_KEYS === 'true' || process.env.USE_ACCESS_KEYS === 'true';
     let redeemedKeyId: string | null = null;
 
     if (accessKeysEnabled && !isFirstUser) {

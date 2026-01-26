@@ -138,7 +138,7 @@ export default function RegisterPage() {
                     value={accessKey}
                     onChange={(e) => setAccessKey(e.target.value)}
                     required
-                    placeholder="Enter your invite key"
+                    placeholder="Enter your access key"
                   />
                   <p className="text-xs text-muted-foreground">
                     An access key is required to register on this instance.

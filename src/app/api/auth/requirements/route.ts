@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const accessKeysEnabled = process.env.ENABLE_ACCESS_KEYS === 'true';
+    const accessKeysEnabled = process.env.ENABLE_ACCESS_KEYS === 'true' || process.env.USE_ACCESS_KEYS === 'true';
     
     if (!accessKeysEnabled) {
        return NextResponse.json({ accessKeyRequired: false });
