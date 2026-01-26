@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -28,7 +29,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Switch } from '@/components/ui/switch';
 import { TestGenerator } from '@/components/admin/test-generator';
 import { AutoGenerationTest } from '@/components/admin/auto-generation-test';
 import { SimpleTagsViewer } from '@/components/admin/simple-tags-viewer';
@@ -48,6 +48,10 @@ interface Tag {
   minStrength?: number;
   maxStrength?: number;
   forcedPromptTags?: string;
+  description?: string;
+  slider?: boolean;
+  sliderLowText?: string;
+  sliderHighText?: string;
   nsfw?: boolean;
   maleCharacterTags?: string;
   femaleCharacterTags?: string;
@@ -90,6 +94,10 @@ export default function AdminPage() {
   const [newTagMaleTags, setNewTagMaleTags] = useState('');
   const [newTagFemaleTags, setNewTagFemaleTags] = useState('');
   const [newTagOtherTags, setNewTagOtherTags] = useState('');
+  const [newTagDescription, setNewTagDescription] = useState('');
+  const [newTagSlider, setNewTagSlider] = useState(false);
+  const [newTagSliderLowText, setNewTagSliderLowText] = useState('');
+  const [newTagSliderHighText, setNewTagSliderHighText] = useState('');
 
   // New style dialog state
   const [isNewStyleDialogOpen, setIsNewStyleDialogOpen] = useState(false);
@@ -142,6 +150,10 @@ export default function AdminPage() {
       minStrength: tag.minStrength,
       maxStrength: tag.maxStrength,
       forcedPromptTags: tag.forcedPromptTags,
+      description: tag.description,
+      slider: tag.slider,
+      sliderLowText: tag.sliderLowText,
+      sliderHighText: tag.sliderHighText,
       nsfw: tag.nsfw,
       maleCharacterTags: tag.maleCharacterTags,
       femaleCharacterTags: tag.femaleCharacterTags,
@@ -197,6 +209,10 @@ export default function AdminPage() {
           minStrength: editTagData.minStrength,
           maxStrength: editTagData.maxStrength,
           forcedPromptTags: editTagData.forcedPromptTags,
+          description: editTagData.description,
+          slider: editTagData.slider,
+          sliderLowText: editTagData.sliderLowText,
+          sliderHighText: editTagData.sliderHighText,
           nsfw: editTagData.nsfw,
           maleCharacterTags: editTagData.maleCharacterTags,
           femaleCharacterTags: editTagData.femaleCharacterTags,
@@ -325,6 +341,10 @@ export default function AdminPage() {
           minStrength: newTagMinStrength,
           maxStrength: newTagMaxStrength,
           forcedPromptTags: newTagForcedPromptTags.trim() || undefined,
+          description: newTagDescription.trim() || undefined,
+          slider: newTagSlider,
+          sliderLowText: newTagSlider ? newTagSliderLowText.trim() || undefined : undefined,
+          sliderHighText: newTagSlider ? newTagSliderHighText.trim() || undefined : undefined,
           nsfw: newTagNsfw,
           maleCharacterTags: newTagMaleTags.trim() || undefined,
           femaleCharacterTags: newTagFemaleTags.trim() || undefined,
@@ -344,6 +364,10 @@ export default function AdminPage() {
       setNewTagMinStrength(1);
       setNewTagMaxStrength(1);
       setNewTagForcedPromptTags('');
+      setNewTagDescription('');
+      setNewTagSlider(false);
+      setNewTagSliderLowText('');
+      setNewTagSliderHighText('');
       setNewTagNsfw(false);
       setNewTagMaleTags('');
       setNewTagFemaleTags('');
@@ -493,7 +517,7 @@ export default function AdminPage() {
                         New Tag
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle>Create New Tag</DialogTitle>
                         <DialogDescription>
@@ -508,6 +532,17 @@ export default function AdminPage() {
                             value={newTagName}
                             onChange={(e) => setNewTagName(e.target.value)}
                             placeholder="Enter tag name..."
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="newTagDescription">Description</Label>
+                          <Textarea
+                            id="newTagDescription"
+                            value={newTagDescription}
+                            onChange={(e) => setNewTagDescription(e.target.value)}
+                            placeholder="Describe what this tag does..."
+                            rows={2}
                           />
                         </div>
 
@@ -580,6 +615,41 @@ export default function AdminPage() {
                           </p>
                         </div>
                         
+                        <div className="flex items-center space-x-2 pt-2 border-t">
+                          <Switch
+                            id="newTagSlider"
+                            checked={newTagSlider}
+                            onCheckedChange={setNewTagSlider}
+                          />
+                          <Label htmlFor="newTagSlider">Enable Slider Control</Label>
+                        </div>
+
+                        {newTagSlider && (
+                          <div className="grid grid-cols-2 gap-4 pl-6 border-l-2 border-primary/20">
+                            <div className="space-y-2">
+                              <Label htmlFor="newTagSliderLowText">Slider Low Text</Label>
+                              <Input
+                                id="newTagSliderLowText"
+                                value={newTagSliderLowText}
+                                onChange={(e) => setNewTagSliderLowText(e.target.value)}
+                                placeholder="e.g. Subtle"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="newTagSliderHighText">Slider High Text</Label>
+                              <Input
+                                id="newTagSliderHighText"
+                                value={newTagSliderHighText}
+                                onChange={(e) => setNewTagSliderHighText(e.target.value)}
+                                placeholder="e.g. Intense"
+                              />
+                            </div>
+                            <p className="col-span-2 text-xs text-muted-foreground">
+                              These texts will be displayed as labels for the slider bounds in the generation interface.
+                            </p>
+                          </div>
+                        )}
+                        
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-4">
                           <div className="space-y-2">
                             <Label htmlFor="newTagMaleTags">Male Character Tags</Label>
@@ -642,6 +712,7 @@ export default function AdminPage() {
                       <TableHead>Strength Range</TableHead>
                       <TableHead>Forced Tags</TableHead>
                       <TableHead>Character Tags</TableHead>
+                      <TableHead>Slider</TableHead>
                       <TableHead>NSFW</TableHead>
                       <TableHead>Usage</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -650,7 +721,7 @@ export default function AdminPage() {
                   <TableBody>
                     {tags.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                           No tags found. Create your first tag to get started.
                         </TableCell>
                       </TableRow>
@@ -775,6 +846,32 @@ export default function AdminPage() {
                                 </div>
                               </TableCell>
                               <TableCell>
+                                <div className="flex flex-col gap-2">
+                                  <Switch
+                                    checked={editTagData.slider || false}
+                                    onCheckedChange={(checked) =>
+                                      setEditTagData({ ...editTagData, slider: checked })
+                                    }
+                                  />
+                                  {editTagData.slider && (
+                                    <div className="flex gap-2 text-xs">
+                                      <Input
+                                        value={editTagData.sliderLowText || ''}
+                                        onChange={(e) => setEditTagData({ ...editTagData, sliderLowText: e.target.value })}
+                                        placeholder="Low text"
+                                        className="h-6 w-20"
+                                      />
+                                      <Input
+                                        value={editTagData.sliderHighText || ''}
+                                        onChange={(e) => setEditTagData({ ...editTagData, sliderHighText: e.target.value })}
+                                        placeholder="High text"
+                                        className="h-6 w-20"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
                                 <Switch
                                   checked={editTagData.nsfw || false}
                                   onCheckedChange={(checked) =>
@@ -839,6 +936,15 @@ export default function AdminPage() {
                                     <span className="text-muted-foreground text-sm">None</span>
                                   )}
                                 </div>
+                              </TableCell>
+                              <TableCell>
+                                {tag.slider ? (
+                                  <Badge variant="default" className="text-xs bg-purple-100 text-purple-800 hover:bg-purple-200 border-purple-200">
+                                    Slider
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-xs">Fixed</Badge>
+                                )}
                               </TableCell>
                               <TableCell>
                                 {tag.nsfw ? (

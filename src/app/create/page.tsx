@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
 import { useAuth } from '@/contexts/auth-context';
 import { useCredits } from '@/contexts/credits-context';
 import { Sparkles, Loader2, Wand2, X } from 'lucide-react';
@@ -24,6 +25,10 @@ interface Tag {
   maleCharacterTags?: string;
   femaleCharacterTags?: string;
   otherCharacterTags?: string;
+  description?: string;
+  slider?: boolean;
+  sliderLowText?: string;
+  sliderHighText?: string;
 }
 
 interface Style {
@@ -36,6 +41,11 @@ interface Style {
 interface LoraConfig {
   name: string;
   weight: number;
+  isSlider: boolean;
+  minStrength: number;
+  maxStrength: number;
+  lowText?: string;
+  highText?: string;
 }
 
 function CreateForm() {
@@ -78,9 +88,6 @@ function CreateForm() {
       const promptParam = searchParams.get('promptTags');
       const aspectParam = searchParams.get('aspect');
 
-      // Note: We aren't restoring character tags from URL params yet as they weren't in the spec, 
-      // but could be added if needed.
-
       if (styleIdParam && styles.some((s) => s.id === styleIdParam)) {
         setSelectedStyle(styleIdParam);
       }
@@ -116,13 +123,20 @@ function CreateForm() {
           if (newConfigs.length < 4) {
             const minStrength = tag.minStrength !== undefined ? tag.minStrength : 1;
             const maxStrength = tag.maxStrength !== undefined ? tag.maxStrength : 1;
-
-            // Generate random weight between min and max
-            const randomWeight = minStrength + Math.random() * (maxStrength - minStrength);
+            
+            // If it's a slider, default to midpoint, otherwise randomize
+            const initialWeight = tag.slider 
+              ? minStrength + (maxStrength - minStrength) / 2
+              : minStrength + Math.random() * (maxStrength - minStrength);
 
             newConfigs.push({
               name: lora,
-              weight: parseFloat(randomWeight.toFixed(2)),
+              weight: parseFloat(initialWeight.toFixed(2)),
+              isSlider: tag.slider || false,
+              minStrength,
+              maxStrength,
+              lowText: tag.sliderLowText,
+              highText: tag.sliderHighText,
             });
           }
         });
@@ -175,6 +189,18 @@ function CreateForm() {
     setSelectedTagIds(selectedTagIds.filter((id) => id !== tagId));
   };
 
+  const handleUpdateLoraWeight = (index: number, weight: number) => {
+    const newConfigs = [...loraConfigs];
+    newConfigs[index].weight = weight;
+    setLoraConfigs(newConfigs);
+  };
+
+  const handleRandomizeWeight = (index: number) => {
+    const config = loraConfigs[index];
+    const randomWeight = config.minStrength + Math.random() * (config.maxStrength - config.minStrength);
+    handleUpdateLoraWeight(index, parseFloat(randomWeight.toFixed(2)));
+  };
+
   const canAffordGeneration = user?.isAdmin || !creditsEnabled || (user?.creditsFree ?? 0) >= creditCost;
 
   const handleGenerate = async () => {
@@ -211,27 +237,17 @@ function CreateForm() {
     setShowReveal(false);
 
     try {
-      // Randomize LoRA weights again on each generation
-      const randomizedConfigs = loraConfigs.map((config) => {
-        const tag = selectedTagIds
-          .map((id) => tags.find((t) => t.id === id))
-          .find((t) => t?.loras?.includes(config.name));
-
-        if (tag) {
-          const minStrength = tag.minStrength !== undefined ? tag.minStrength : 1;
-          const maxStrength = tag.maxStrength !== undefined ? tag.maxStrength : 1;
-          const randomWeight = minStrength + Math.random() * (maxStrength - minStrength);
-
-          return {
-            ...config,
-            weight: parseFloat(randomWeight.toFixed(2)),
-          };
+      // Randomize non-slider weights again on each generation
+      const finalConfigs = loraConfigs.map((config) => {
+        if (!config.isSlider) {
+          const randomWeight = config.minStrength + Math.random() * (config.maxStrength - config.minStrength);
+          return { ...config, weight: parseFloat(randomWeight.toFixed(2)) };
         }
         return config;
       });
 
-      const loraNames = randomizedConfigs.map((config) => config.name);
-      const loraWeights = randomizedConfigs.map((config) => config.weight);
+      const loraNames = finalConfigs.map((config) => config.name);
+      const loraWeights = finalConfigs.map((config) => config.weight);
 
       // Construct character strings
       const allMaleTags = [lockedMaleTags, maleTags].filter(t => t && t.trim()).join(', ');
@@ -310,13 +326,14 @@ function CreateForm() {
 
       // Auto-fill title if empty
       if (!title) {
+        const selectedStyleName = selectedStyleObj.name;
         const selectedTagNames = selectedTagIds
           .map((id) => tags.find((t) => t.id === id)?.name)
           .filter(Boolean)
           .join(', ');
         const autoTitle = selectedTagNames
-          ? `${selectedTagNames} - ${selectedStyleObj.name}`
-          : selectedStyleObj.name;
+          ? `${selectedTagNames} - ${selectedStyleName}`
+          : selectedStyleName;
         setTitle(autoTitle);
       }
 
@@ -369,11 +386,11 @@ function CreateForm() {
       const uploadData = await uploadResponse.json();
       const { image: processedImage } = uploadData;
 
-      // Create the image record in the database
       const allMaleTags = [lockedMaleTags, maleTags].filter(t => t && t.trim()).join(', ');
       const allFemaleTags = [lockedFemaleTags, femaleTags].filter(t => t && t.trim()).join(', ');
       const allOtherTags = [lockedOtherTags, otherTags].filter(t => t && t.trim()).join(', ');
 
+      // Create the image record in the database
       const createResponse = await fetch('/api/images', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -858,6 +875,7 @@ function CreateForm() {
                           return tag ? (
                             <Badge key={tagId} variant="secondary" className="gap-1">
                               {tag.name}
+                              {tag.slider && <span className="text-xs bg-purple-500/20 text-purple-700 px-1 rounded">Slider</span>}
                               <X
                                 className="w-3 h-3 cursor-pointer"
                                 onClick={() => handleRemoveTag(tagId)}
@@ -875,6 +893,72 @@ function CreateForm() {
                       <div className="bg-muted p-3 rounded-md">
                         <p className="text-sm text-muted-foreground">{forcedTagsPreview}</p>
                       </div>
+                    </div>
+                  )}
+
+                  {loraConfigs.length > 0 && (
+                    <div className="space-y-4">
+                      <Label>LoRA Weights</Label>
+                      {loraConfigs.map((config, index) => (
+                        <div key={index} className="space-y-2 p-3 border rounded-md bg-muted/30">
+                          <div className="flex items-center justify-between">
+                            <code className="text-xs bg-background px-2 py-1 rounded border truncate max-w-[200px]">
+                              {config.name}
+                            </code>
+                            {config.isSlider ? (
+                              <Badge variant="default" className="text-xs bg-purple-100 text-purple-800 hover:bg-purple-200 border-purple-200">
+                                Slider
+                              </Badge>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRandomizeWeight(index)}
+                                title="Randomize weight"
+                                className="h-6 px-2 text-xs"
+                              >
+                                🎲 Randomize
+                              </Button>
+                            )}
+                          </div>
+
+                          {config.isSlider ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+                                <span>{config.lowText || 'Low'}</span>
+                                <span>{config.highText || 'High'}</span>
+                              </div>
+                              <Slider
+                                value={[config.weight]}
+                                onValueChange={(values) => handleUpdateLoraWeight(index, values[0])}
+                                min={config.minStrength}
+                                max={config.maxStrength}
+                                step={0.01}
+                                className="w-full"
+                              />
+                              <div className="text-center text-xs font-mono text-muted-foreground">
+                                {config.weight.toFixed(2)}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min={config.minStrength}
+                                max={config.maxStrength}
+                                value={config.weight}
+                                onChange={(e) => handleUpdateLoraWeight(index, parseFloat(e.target.value))}
+                                className="w-24 h-8"
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Range: {config.minStrength} - {config.maxStrength}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
 
