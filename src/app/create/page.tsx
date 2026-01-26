@@ -192,7 +192,8 @@ function CreateForm() {
 
   const fetchData = async () => {
     try {
-      const [tagsRes, stylesRes] = await Promise.all([fetch('/api/tags'), fetch('/api/styles')]);
+      const tagsUrl = user?.nsfwEnabled ? '/api/tags?nsfw=true' : '/api/tags';
+      const [tagsRes, stylesRes] = await Promise.all([fetch(tagsUrl), fetch('/api/styles')]);
 
       const tagsData = await tagsRes.json();
       const stylesData = await stylesRes.json();
