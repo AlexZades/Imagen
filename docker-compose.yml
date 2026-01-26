@@ -30,6 +30,7 @@ services:
       - COMFYUI_API_URL=http://192.168.0.16:3000
       # - AUTO_GENERATION_SECRET=your-secret-token-here
       - CREDITS_SYSTEM_ENABLED=true
+      - ENABLE_ACCESS_KEYS=true
       
       # Set to "true" to run migrations on startup
       - AUTO_MIGRATE=true
