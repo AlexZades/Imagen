@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,153 +11,144 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  username     String   @unique
-  email        String   @unique
-  passwordHash String
-  avatarUrl    String?
-  isAdmin      Boolean  @default(false)
-  createdAt    DateTime @default(now())
-
-  // Credits system
-  creditsFree            Int       @default(0) @map("credits_free")
-  creditsFreeLastGrantAt DateTime? @map("credits_free_last_grant_at")
-
-  nsfwEnabled Boolean @default(false)
-
-  images Image[]
-  likes  Like[]
+  id             String    @id @default(cuid())
+  email          String    @unique
+  password       String
+  isAdmin        Boolean   @default(false)
+  creditsFree    Int       @default(10)
+  creditsPaid    Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  images         Image[]
+  likes          Like[]
+  creditHistory  CreditHistory[]
 }
 
 model Image {
-  id                String   @id @default(cuid())
-  userId            String
-  title             String
-  description       String?
-  promptTags        String?
-  contentRating     String   @default("safe") @map("content_rating")
-  imageUrl          String
-  thumbnailUrl      String?
-  filename          String?
-  thumbnailFilename String?
-  width             Int
-  height            Int
-  size              Int?
-  
-  maleCharacterTags   String? @map("male_character_tags")
-  femaleCharacterTags String? @map("female_character_tags")
-  otherCharacterTags  String? @map("other_character_tags")
-
-  createdAt         DateTime @default(now())
-  viewCount         Int      @default(0)
-  likeCount         Int      @default(0)
-  dislikeCount      Int      @default(0)
+  id                  String    @id @default(cuid())
+  title               String
+  description         String?
+  promptTags          String?
+  imageUrl            String
+  thumbnailUrl        String
+  filename            String
+  thumbnailFilename   String
+  width               Int
+  height              Int
+  size                Int
+  userId              String
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  tags                Tag[]
+  styles              Style[]
+  likes               Like[]
+  likeCount           Int       @default(0)
+  viewCount           Int       @default(0)
+  maleCharacterTags   String?
+  femaleCharacterTags String?
+  otherCharacterTags  String?
   
   // Storage fields
   storageProvider     String    @default("local") // "local", "s3", etc.
   storageKey          String?   // S3 key or similar identifier
   thumbnailStorageKey String?   // S3 key for thumbnail
-
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  imageTags   ImageTag[]
-  imageStyles ImageStyle[]
-  likes       Like[]
-
-  @@index([userId])
-  @@index([createdAt])
 }
 
 model Tag {
-  id               String   @id @default(cuid())
-  name             String   @unique
-  loras            String[] @default([])
-  minStrength      Float?
-  maxStrength      Float?
-  forcedPromptTags String?
-  nsfw             Boolean  @default(false)
-  usageCount       Int      @default(0)
-  createdAt        DateTime @default(now())
-
-  maleCharacterTags   String? @map("male_character_tags")
-  femaleCharacterTags String? @map("female_character_tags")
-  otherCharacterTags  String? @map("other_character_tags")
+  id                  String    @id @default(cuid())
+  name                String    @unique
+  usageCount          Int       @default(0)
+  images              Image[]
+  loras               String[]  @default([])
+  minStrength         Float?    @default(1.0)
+  maxStrength         Float?    @default(1.0)
+  forcedPromptTags    String?
+  nsfw                Boolean   @default(false)
+  maleCharacterTags   String?
+  femaleCharacterTags String?
+  otherCharacterTags  String?
   
   // Slider features
   description         String?
   slider              Boolean   @default(false)
   sliderLowText       String?
   sliderHighText      String?
-
-  imageTags ImageTag[]
 }
 
 model Style {
-  id             String   @id @default(cuid())
-  name           String   @unique
+  id             String    @id @default(cuid())
+  name           String    @unique
   description    String?
   checkpointName String?
-  usageCount     Int      @default(0)
-  createdAt      DateTime @default(now())
-
-  imageStyles ImageStyle[]
+  usageCount     Int       @default(0)
+  images         Image[]
 }
 
 model Like {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
   imageId   String
-  isLike    Boolean
-  createdAt DateTime @default(now())
-
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  image Image @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  image     Image     @relation(fields: [imageId], references: [id], onDelete: Cascade)
 
   @@unique([userId, imageId])
-  @@index([imageId])
 }
 
-model ImageTag {
-  id        String   @id @default(cuid())
-  imageId   String
-  tagId     String
-  createdAt DateTime @default(now())
-
-  image Image @relation(fields: [imageId], references: [id], onDelete: Cascade)
-  tag   Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@unique([imageId, tagId])
-  @@index([tagId])
-}
-
-model ImageStyle {
-  id        String   @id @default(cuid())
-  imageId   String
-  styleId   String
-  createdAt DateTime @default(now())
-
-  image Image @relation(fields: [imageId], references: [id], onDelete: Cascade)
-  style Style @relation(fields: [styleId], references: [id], onDelete: Cascade)
-
-  @@unique([imageId, styleId])
-  @@index([styleId])
-}
-
+// Simple configuration for generation settings that don't fit into Tags or Styles
 model GenerationConfig {
   id        String   @id @default(cuid())
   key       String   @unique
-  value     String
+  value     String   // JSON stringified value
+  updatedAt DateTime @updatedAt
+}
+
+model CreditHistory {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount      Int      // Positive for credit/refund, negative for usage
+  type        String   // "daily_reset", "purchase", "generation", "refund", "admin_grant"
+  description String?
+  createdAt   DateTime @default(now())
+}
+
+model AutoGenerationTest {
+  id        String   @id @default(cuid())
+  prompt    String
+  status    String   @default("pending") // pending, processing, completed, failed
+  result    String?  // JSON stringified result
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model SimpleTag {
-  id         String   @id @default(cuid())
-  tag        String   @unique
-  category   String?
-  usageCount Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+// Fallback tags for auto-generation when no specific tags are found
+model FallbackTag {
+  id        String   @id @default(cuid())
+  prompt    String   // The tag to add to the prompt
+  category  String   // e.g., "quality", "negative", "style"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
-  @@index([usageCount])
-  @@index([category])
+// Simple tag definitions for regex matching
+model SimpleTag {
+  id          String   @id @default(cuid())
+  pattern     String   // Regex pattern to match
+  tag         String   // The actual tag to use
+  category    String?  // Optional category grouping
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([pattern])
+}
+
+// Speech bubble detection trigger words
+model SpeechBubbleTrigger {
+  id        String   @id @default(cuid())
+  word      String   @unique
+  createdAt DateTime @default(now())
 }
