@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useCredits } from '@/contexts/credits-context';
 import { Sparkles, Loader2, Wand2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { Slider } from '@/components/ui/slider';
 
 interface Tag {
   id: string;
@@ -24,6 +25,10 @@ interface Tag {
   maleCharacterTags?: string;
   femaleCharacterTags?: string;
   otherCharacterTags?: string;
+  description?: string;
+  slider?: boolean;
+  sliderLowText?: string;
+  sliderHighText?: string;
 }
 
 interface Style {
@@ -54,6 +59,10 @@ function CreateForm() {
   const [otherTags, setOtherTags] = useState('');
   
   const [loraConfigs, setLoraConfigs] = useState<LoraConfig[]>([]);
+  
+  // Track manual slider values for tags that have sliders enabled
+  const [tagSliderValues, setTagSliderValues] = useState<Record<string, number>>({});
+  
   const [title, setTitle] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -95,6 +104,19 @@ function CreateForm() {
           .filter((id) => tags.some((t) => t.id === id));
         if (ids.length > 0) {
           setSelectedTagIds(ids);
+          
+          // Initialize slider values for these tags if needed
+          const newSliderValues: Record<string, number> = {};
+          ids.forEach(id => {
+             const tag = tags.find(t => t.id === id);
+             if (tag && tag.slider) {
+                // If it's a slider, default to the max strength or a middle value?
+                // The prompt says "slide between the upper and lower limits".
+                // Let's default to max strength as it usually means "full effect"
+                newSliderValues[id] = tag.maxStrength ?? 1.0;
+             }
+          });
+          setTagSliderValues(prev => ({ ...prev, ...newSliderValues }));
         }
       }
 
@@ -122,15 +144,24 @@ function CreateForm() {
         tag.loras.forEach((lora) => {
           // Only add if we haven't reached 4 LoRAs yet
           if (newConfigs.length < 4) {
-            const minStrength = tag.minStrength !== undefined ? tag.minStrength : 1;
+            const minStrength = tag.minStrength !== undefined ? tag.minStrength : 0;
             const maxStrength = tag.maxStrength !== undefined ? tag.maxStrength : 1;
 
-            // Generate random weight between min and max
-            const randomWeight = minStrength + Math.random() * (maxStrength - minStrength);
+            let weight: number;
+            
+            if (tag.slider && tagSliderValues[tagId] !== undefined) {
+               // Use the manual slider value
+               weight = tagSliderValues[tagId];
+            } else {
+               // Generate random weight between min and max (legacy behavior or for non-slider tags)
+               // Note: For slider tags, we might want to initialize them to a specific value instead of random
+               // But for consistency with existing code, random is default unless overridden by slider
+               weight = minStrength + Math.random() * (maxStrength - minStrength);
+            }
 
             newConfigs.push({
               name: lora,
-              weight: parseFloat(randomWeight.toFixed(2)),
+              weight: parseFloat(weight.toFixed(2)),
             });
           }
         });
@@ -138,7 +169,7 @@ function CreateForm() {
     });
 
     setLoraConfigs(newConfigs);
-  }, [selectedTagIds, tags]);
+  }, [selectedTagIds, tags, tagSliderValues]);
 
   // Derived state for locked character tags
   const lockedMaleTags = selectedTagIds
@@ -176,11 +207,32 @@ function CreateForm() {
   const handleAddTag = (tagId: string) => {
     if (!selectedTagIds.includes(tagId)) {
       setSelectedTagIds([...selectedTagIds, tagId]);
+      
+      const tag = tags.find(t => t.id === tagId);
+      if (tag && tag.slider) {
+         // Initialize slider to max strength (full effect) by default
+         setTagSliderValues(prev => ({
+            ...prev,
+            [tagId]: tag.maxStrength ?? 1.0
+         }));
+      }
     }
   };
 
   const handleRemoveTag = (tagId: string) => {
     setSelectedTagIds(selectedTagIds.filter((id) => id !== tagId));
+    
+    // Clean up slider value
+    const newSliderValues = { ...tagSliderValues };
+    delete newSliderValues[tagId];
+    setTagSliderValues(newSliderValues);
+  };
+  
+  const handleSliderChange = (tagId: string, value: number[]) => {
+     setTagSliderValues(prev => ({
+        ...prev,
+        [tagId]: value[0]
+     }));
   };
 
   const canAffordGeneration = user?.isAdmin || !creditsEnabled || (user?.creditsFree ?? 0) >= creditCost;
@@ -219,21 +271,33 @@ function CreateForm() {
     setShowReveal(false);
 
     try {
-      // Randomize LoRA weights again on each generation
+      // Prepare LoRA configs
+      // If a tag has a slider, we use the specific slider value.
+      // If NOT, we randomize (as per previous logic).
+      
       const randomizedConfigs = loraConfigs.map((config) => {
         const tag = selectedTagIds
           .map((id) => tags.find((t) => t.id === id))
           .find((t) => t?.loras?.includes(config.name));
 
         if (tag) {
-          const minStrength = tag.minStrength !== undefined ? tag.minStrength : 1;
+          const minStrength = tag.minStrength !== undefined ? tag.minStrength : 0;
           const maxStrength = tag.maxStrength !== undefined ? tag.maxStrength : 1;
-          const randomWeight = minStrength + Math.random() * (maxStrength - minStrength);
-
-          return {
-            ...config,
-            weight: parseFloat(randomWeight.toFixed(2)),
-          };
+          
+          if (tag.slider && tagSliderValues[tag.id] !== undefined) {
+             // Use exact slider value
+             return {
+                ...config,
+                weight: tagSliderValues[tag.id]
+             };
+          } else {
+             // Randomize
+             const randomWeight = minStrength + Math.random() * (maxStrength - minStrength);
+             return {
+               ...config,
+               weight: parseFloat(randomWeight.toFixed(2)),
+             };
+          }
         }
         return config;
       });
@@ -860,18 +924,49 @@ function CreateForm() {
                     </Select>
 
                     {selectedTagIds.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
+                      <div className="flex flex-col gap-3 mt-2">
                         {selectedTagIds.map((tagId) => {
                           const tag = tags.find((t) => t.id === tagId);
-                          return tag ? (
-                            <Badge key={tagId} variant="secondary" className="gap-1">
-                              {tag.name}
-                              <X
-                                className="w-3 h-3 cursor-pointer"
-                                onClick={() => handleRemoveTag(tagId)}
-                              />
-                            </Badge>
-                          ) : null;
+                          if (!tag) return null;
+                          
+                          return (
+                            <div key={tagId} className="bg-secondary/30 p-3 rounded-md border border-secondary">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex flex-col">
+                                    <span className="font-medium text-sm">{tag.name}</span>
+                                    {tag.description && (
+                                      <span className="text-xs text-muted-foreground">{tag.description}</span>
+                                    )}
+                                  </div>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-6 w-6" 
+                                    onClick={() => handleRemoveTag(tagId)}
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                                
+                                {tag.slider && (
+                                  <div className="space-y-2">
+                                    <Slider
+                                      defaultValue={[tagSliderValues[tagId] || (tag.maxStrength ?? 1)]}
+                                      value={[tagSliderValues[tagId] || (tag.maxStrength ?? 1)]}
+                                      min={tag.minStrength ?? 0}
+                                      max={tag.maxStrength ?? 1}
+                                      step={0.01}
+                                      onValueChange={(val) => handleSliderChange(tagId, val)}
+                                      className="py-1"
+                                    />
+                                    <div className="flex justify-between text-xs text-muted-foreground">
+                                      <span>{tag.sliderLowText || 'Low'}</span>
+                                      <span>{tag.sliderHighText || 'High'}</span>
+                                    </div>
+                                  </div>
+                                )}
+                            </div>
+                          );
                         })}
                       </div>
                     )}
