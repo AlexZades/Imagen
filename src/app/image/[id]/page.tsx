@@ -305,6 +305,11 @@ export default function ImageDetailPage() {
     if (tags.length > 0) params.set('tagIds', tags.map(t => t.id).join(','));
     params.set('aspect', getAspectRatioKey(image.width, image.height));
     
+    // Add character data to the remix parameters
+    if (image.maleCharacterTags) params.set('maleCharacterTags', image.maleCharacterTags);
+    if (image.femaleCharacterTags) params.set('femaleCharacterTags', image.femaleCharacterTags);
+    if (image.otherCharacterTags) params.set('otherCharacterTags', image.otherCharacterTags);
+    
     router.push(`/create?${params.toString()}`);
   };
 
