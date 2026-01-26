@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const styles = await prisma.style.findMany({
       where,
       orderBy: {
-        usageCount: 'desc'
+        name: 'asc'
       }
     });
 

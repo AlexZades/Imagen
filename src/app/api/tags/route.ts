@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const tags = await prisma.tag.findMany({
       where,
       orderBy: {
-        usageCount: 'desc'
+        name: 'asc'
       }
     });
 
