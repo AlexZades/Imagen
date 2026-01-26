@@ -104,6 +104,9 @@ export default function ImageDetailPage() {
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editPromptTags, setEditPromptTags] = useState('');
+  const [editMaleTags, setEditMaleTags] = useState('');
+  const [editFemaleTags, setEditFemaleTags] = useState('');
+  const [editOtherTags, setEditOtherTags] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   // Delete state
@@ -259,6 +262,9 @@ export default function ImageDetailPage() {
       setEditTitle(image.title);
       setEditDescription(image.description || '');
       setEditPromptTags(image.promptTags || '');
+      setEditMaleTags(image.maleCharacterTags || '');
+      setEditFemaleTags(image.femaleCharacterTags || '');
+      setEditOtherTags(image.otherCharacterTags || '');
       setIsEditDialogOpen(true);
     }
   };
@@ -277,6 +283,9 @@ export default function ImageDetailPage() {
           title: editTitle,
           description: editDescription,
           promptTags: editPromptTags,
+          maleCharacterTags: editMaleTags,
+          femaleCharacterTags: editFemaleTags,
+          otherCharacterTags: editOtherTags,
         }),
       });
 
@@ -683,6 +692,48 @@ export default function ImageDetailPage() {
               <p className="text-xs text-muted-foreground">
                 Enter tags separated by commas
               </p>
+            </div>
+
+            <div className="space-y-2 border-t pt-2">
+              <h4 className="font-medium text-sm">Character Tags</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label htmlFor="editMaleTags" className="text-xs font-medium text-muted-foreground">
+                    Male
+                  </label>
+                  <Input
+                    id="editMaleTags"
+                    value={editMaleTags}
+                    onChange={(e) => setEditMaleTags(e.target.value)}
+                    placeholder="Names..."
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="editFemaleTags" className="text-xs font-medium text-muted-foreground">
+                    Female
+                  </label>
+                  <Input
+                    id="editFemaleTags"
+                    value={editFemaleTags}
+                    onChange={(e) => setEditFemaleTags(e.target.value)}
+                    placeholder="Names..."
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="editOtherTags" className="text-xs font-medium text-muted-foreground">
+                    Other
+                  </label>
+                  <Input
+                    id="editOtherTags"
+                    value={editOtherTags}
+                    onChange={(e) => setEditOtherTags(e.target.value)}
+                    placeholder="Names..."
+                    className="h-8 text-sm"
+                  />
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
