@@ -52,10 +52,6 @@ interface Tag {
   maleCharacterTags?: string;
   femaleCharacterTags?: string;
   otherCharacterTags?: string;
-  description?: string;
-  slider?: boolean;
-  sliderLowText?: string;
-  sliderHighText?: string;
 }
 
 interface Style {
@@ -94,10 +90,6 @@ export default function AdminPage() {
   const [newTagMaleTags, setNewTagMaleTags] = useState('');
   const [newTagFemaleTags, setNewTagFemaleTags] = useState('');
   const [newTagOtherTags, setNewTagOtherTags] = useState('');
-  const [newTagDescription, setNewTagDescription] = useState('');
-  const [newTagSlider, setNewTagSlider] = useState(false);
-  const [newTagSliderLowText, setNewTagSliderLowText] = useState('');
-  const [newTagSliderHighText, setNewTagSliderHighText] = useState('');
 
   // New style dialog state
   const [isNewStyleDialogOpen, setIsNewStyleDialogOpen] = useState(false);
@@ -154,10 +146,6 @@ export default function AdminPage() {
       maleCharacterTags: tag.maleCharacterTags,
       femaleCharacterTags: tag.femaleCharacterTags,
       otherCharacterTags: tag.otherCharacterTags,
-      description: tag.description,
-      slider: tag.slider,
-      sliderLowText: tag.sliderLowText,
-      sliderHighText: tag.sliderHighText,
     });
   };
 
@@ -213,10 +201,6 @@ export default function AdminPage() {
           maleCharacterTags: editTagData.maleCharacterTags,
           femaleCharacterTags: editTagData.femaleCharacterTags,
           otherCharacterTags: editTagData.otherCharacterTags,
-          description: editTagData.description,
-          slider: editTagData.slider,
-          sliderLowText: editTagData.sliderLowText,
-          sliderHighText: editTagData.sliderHighText,
         }),
       });
 
@@ -345,10 +329,6 @@ export default function AdminPage() {
           maleCharacterTags: newTagMaleTags.trim() || undefined,
           femaleCharacterTags: newTagFemaleTags.trim() || undefined,
           otherCharacterTags: newTagOtherTags.trim() || undefined,
-          description: newTagDescription.trim() || undefined,
-          slider: newTagSlider,
-          sliderLowText: newTagSliderLowText.trim() || undefined,
-          sliderHighText: newTagSliderHighText.trim() || undefined,
         }),
       });
 
@@ -368,10 +348,6 @@ export default function AdminPage() {
       setNewTagMaleTags('');
       setNewTagFemaleTags('');
       setNewTagOtherTags('');
-      setNewTagDescription('');
-      setNewTagSlider(false);
-      setNewTagSliderLowText('');
-      setNewTagSliderHighText('');
       fetchData();
     } catch (error) {
       toast.error('Failed to create tag');
@@ -536,17 +512,6 @@ export default function AdminPage() {
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="newTagDescription">Description</Label>
-                          <Textarea
-                            id="newTagDescription"
-                            value={newTagDescription}
-                            onChange={(e) => setNewTagDescription(e.target.value)}
-                            placeholder="Optional description..."
-                            rows={2}
-                          />
-                        </div>
-
-                        <div className="space-y-2">
                           <Label>LoRAs</Label>
                           <div className="flex gap-2">
                             <Input
@@ -656,40 +621,6 @@ export default function AdminPage() {
                           />
                           <Label htmlFor="newTagNsfw">NSFW Content</Label>
                         </div>
-                        
-                        <div className="space-y-4 border-t pt-4">
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id="newTagSlider"
-                              checked={newTagSlider}
-                              onCheckedChange={setNewTagSlider}
-                            />
-                            <Label htmlFor="newTagSlider">Enable Slider</Label>
-                          </div>
-                          
-                          {newTagSlider && (
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="newTagSliderLowText">Slider Low Text</Label>
-                                <Input
-                                  id="newTagSliderLowText"
-                                  value={newTagSliderLowText}
-                                  onChange={(e) => setNewTagSliderLowText(e.target.value)}
-                                  placeholder="e.g. Weak"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="newTagSliderHighText">Slider High Text</Label>
-                                <Input
-                                  id="newTagSliderHighText"
-                                  value={newTagSliderHighText}
-                                  onChange={(e) => setNewTagSliderHighText(e.target.value)}
-                                  placeholder="e.g. Strong"
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
 
                       </div>
                       <DialogFooter>
@@ -729,25 +660,13 @@ export default function AdminPage() {
                           {editingTagId === tag.id ? (
                             <>
                               <TableCell>
-                                <div className="space-y-2">
-                                  <Input
-                                    value={editTagData.name || ''}
-                                    onChange={(e) =>
-                                      setEditTagData({ ...editTagData, name: e.target.value })
-                                    }
-                                    className="max-w-xs"
-                                    placeholder="Name"
-                                  />
-                                  <Textarea
-                                    value={editTagData.description || ''}
-                                    onChange={(e) =>
-                                      setEditTagData({ ...editTagData, description: e.target.value })
-                                    }
-                                    className="max-w-xs text-xs"
-                                    placeholder="Description"
-                                    rows={2}
-                                  />
-                                </div>
+                                <Input
+                                  value={editTagData.name || ''}
+                                  onChange={(e) =>
+                                    setEditTagData({ ...editTagData, name: e.target.value })
+                                  }
+                                  className="max-w-xs"
+                                />
                               </TableCell>
                               <TableCell>
                                 <div className="space-y-2">
@@ -799,7 +718,7 @@ export default function AdminPage() {
                                       })
                                     }
                                     className="max-w-[80px]"
-                                    placeholder="Min"
+                                    placeholder="1.0"
                                   />
                                   <span className="text-muted-foreground">-</span>
                                   <Input
@@ -813,38 +732,9 @@ export default function AdminPage() {
                                       })
                                     }
                                     className="max-w-[80px]"
-                                    placeholder="Max"
+                                    placeholder="1.0"
                                   />
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                  <Switch
-                                    checked={editTagData.slider || false}
-                                    onCheckedChange={(checked) =>
-                                      setEditTagData({ ...editTagData, slider: checked })
-                                    }
-                                  />
-                                  <Label className="text-xs">Slider</Label>
-                                </div>
-                                {editTagData.slider && (
-                                  <div className="grid grid-cols-2 gap-1">
-                                    <Input
-                                      value={editTagData.sliderLowText || ''}
-                                      onChange={(e) =>
-                                        setEditTagData({ ...editTagData, sliderLowText: e.target.value })
-                                      }
-                                      placeholder="Low txt"
-                                      className="h-6 text-xs"
-                                    />
-                                    <Input
-                                      value={editTagData.sliderHighText || ''}
-                                      onChange={(e) =>
-                                        setEditTagData({ ...editTagData, sliderHighText: e.target.value })
-                                      }
-                                      placeholder="High txt"
-                                      className="h-6 text-xs"
-                                    />
-                                  </div>
-                                )}
                               </TableCell>
                               <TableCell>
                                 <Input
@@ -914,10 +804,7 @@ export default function AdminPage() {
                             </>
                           ) : (
                             <>
-                              <TableCell className="font-medium">
-                                <div className="font-medium">{tag.name}</div>
-                                {tag.description && <div className="text-xs text-muted-foreground">{tag.description}</div>}
-                              </TableCell>
+                              <TableCell className="font-medium">{tag.name}</TableCell>
                               <TableCell>
                                 {tag.loras && tag.loras.length > 0 ? (
                                   <div className="flex flex-wrap gap-1">
@@ -935,11 +822,6 @@ export default function AdminPage() {
                                 <span className="text-sm">
                                   {tag.minStrength !== undefined ? tag.minStrength : '-'} - {tag.maxStrength !== undefined ? tag.maxStrength : '-'}
                                 </span>
-                                {tag.slider && (
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    Slider: {tag.sliderLowText || 'Low'} / {tag.sliderHighText || 'High'}
-                                  </div>
-                                )}
                               </TableCell>
                               <TableCell>
                                 {tag.forcedPromptTags ? (

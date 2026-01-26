@@ -3,23 +3,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function PUT(request: NextRequest) {
   try {
-    const { 
-      userId, 
-      tagId, 
-      name, 
-      loras, 
-      minStrength, 
-      maxStrength, 
-      forcedPromptTags, 
-      nsfw, 
-      maleCharacterTags, 
-      femaleCharacterTags, 
-      otherCharacterTags,
-      description,
-      slider,
-      sliderLowText,
-      sliderHighText
-    } = await request.json();
+    const { userId, tagId, name, loras, minStrength, maxStrength, forcedPromptTags, nsfw, maleCharacterTags, femaleCharacterTags, otherCharacterTags } = await request.json();
 
     if (!userId || !tagId) {
       return NextResponse.json(
@@ -53,10 +37,6 @@ export async function PUT(request: NextRequest) {
         ...(maleCharacterTags !== undefined && { maleCharacterTags }),
         ...(femaleCharacterTags !== undefined && { femaleCharacterTags }),
         ...(otherCharacterTags !== undefined && { otherCharacterTags }),
-        ...(description !== undefined && { description }),
-        ...(slider !== undefined && { slider }),
-        ...(sliderLowText !== undefined && { sliderLowText }),
-        ...(sliderHighText !== undefined && { sliderHighText }),
       }
     });
 
