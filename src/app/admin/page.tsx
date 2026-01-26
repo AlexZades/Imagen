@@ -37,6 +37,7 @@ import { SpeechBubbleTriggersEditor } from '@/components/admin/speech-bubble-tri
 import { GenerationSettings } from '@/components/admin/generation-settings';
 import { StorageMigration } from '@/components/admin/storage-migration';
 import { CreditsSettings } from '@/components/admin/credits-settings';
+import { AccessKeysManager } from '@/components/admin/access-keys-manager';
 import { toast } from 'sonner';
 import { Edit, Trash2, Plus, X, Save, Settings, Wrench } from 'lucide-react';
 
@@ -466,6 +467,7 @@ export default function AdminPage() {
             <TabsTrigger value="auto-generation">Auto-Generation</TabsTrigger>
             <TabsTrigger value="generation-settings">Algorithm Settings</TabsTrigger>
             <TabsTrigger value="credits">Credits</TabsTrigger>
+            <TabsTrigger value="access-keys">Access Keys</TabsTrigger>
             <TabsTrigger value="tags">Tags</TabsTrigger>
             <TabsTrigger value="styles">Styles</TabsTrigger>
             <TabsTrigger value="simple-tags">Simple Tags</TabsTrigger>
@@ -487,6 +489,10 @@ export default function AdminPage() {
 
           <TabsContent value="credits" className="mt-6">
             <CreditsSettings />
+          </TabsContent>
+
+          <TabsContent value="access-keys" className="mt-6">
+            <AccessKeysManager />
           </TabsContent>
 
           <TabsContent value="simple-tags" className="mt-6">

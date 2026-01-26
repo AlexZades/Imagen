@@ -5,7 +5,7 @@ import { grantDailyFreeCreditsIfNeeded } from '@/lib/credits';
 
 export async function POST(request: NextRequest) {
   try {
-    const { username, email, password } = await request.json();
+    const { username, email, password, accessKey } = await request.json();
 
     if (!username || !email || !password) {
       return NextResponse.json(
@@ -39,6 +39,31 @@ export async function POST(request: NextRequest) {
     const userCount = await prisma.user.count();
     const isFirstUser = userCount === 0;
 
+    // Check Access Key Requirement
+    const accessKeysEnabled = process.env.ENABLE_ACCESS_KEYS === 'true';
+    let redeemedKeyId: string | null = null;
+
+    if (accessKeysEnabled && !isFirstUser) {
+      if (!accessKey) {
+        return NextResponse.json(
+          { message: 'Access key is required for registration' },
+          { status: 403 }
+        );
+      }
+
+      const validKey = await prisma.accessKey.findUnique({
+        where: { key: accessKey },
+      });
+
+      if (!validKey || validKey.isRedeemed) {
+        return NextResponse.json(
+          { message: 'Invalid or already redeemed access key' },
+          { status: 403 }
+        );
+      }
+      redeemedKeyId = validKey.id;
+    }
+
     const created = await prisma.user.create({
       data: {
         username,
@@ -50,6 +75,18 @@ export async function POST(request: NextRequest) {
         id: true,
       },
     });
+
+    // Mark access key as redeemed if used
+    if (redeemedKeyId) {
+      await prisma.accessKey.update({
+        where: { id: redeemedKeyId },
+        data: {
+          isRedeemed: true,
+          redeemedBy: created.id,
+          redeemedAt: new Date(),
+        },
+      });
+    }
 
     // Daily free credits grant (acts as initial credit allocation too)
     await grantDailyFreeCreditsIfNeeded(created.id);

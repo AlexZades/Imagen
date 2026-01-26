@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
@@ -16,9 +16,26 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [accessKey, setAccessKey] = useState('');
+  const [isAccessKeyRequired, setIsAccessKeyRequired] = useState(false);
+  const [checkingRequirements, setCheckingRequirements] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
   const router = useRouter();
+
+  React.useEffect(() => {
+    fetch('/api/auth/requirements')
+      .then((res) => res.json())
+      .then((data) => {
+        setIsAccessKeyRequired(data.accessKeyRequired);
+      })
+      .catch((err) => {
+        console.error('Failed to check auth requirements', err);
+      })
+      .finally(() => {
+        setCheckingRequirements(false);
+      });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,10 +45,15 @@ export default function RegisterPage() {
       return;
     }
 
+    if (isAccessKeyRequired && !accessKey) {
+      toast.error('Access key is required');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      await register(username, email, password);
+      await register(username, email, password, accessKey);
       toast.success('Account created successfully!');
       router.push('/');
     } catch (error: any) {
@@ -40,6 +62,14 @@ export default function RegisterPage() {
       setIsLoading(false);
     }
   };
+
+  if (checkingRequirements) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -98,6 +128,23 @@ export default function RegisterPage() {
                   minLength={6}
                 />
               </div>
+
+              {isAccessKeyRequired && (
+                <div className="space-y-2">
+                  <Label htmlFor="accessKey">Access Key</Label>
+                  <Input
+                    id="accessKey"
+                    type="text"
+                    value={accessKey}
+                    onChange={(e) => setAccessKey(e.target.value)}
+                    required
+                    placeholder="Enter your invite key"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    An access key is required to register on this instance.
+                  </p>
+                </div>
+              )}
 
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Creating account...' : 'Register'}

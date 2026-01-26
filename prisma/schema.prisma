@@ -22,8 +22,12 @@ model User {
 
   nsfwEnabled Boolean @default(false)
 
-  images Image[]
-  likes  Like[]
+  images      Image[]
+  likes       Like[]
+  redeemedKey AccessKey?
+
+  @@index([email])
+  @@index([username])
 }
 
 model Image {
@@ -151,4 +155,15 @@ model SimpleTag {
 
   @@index([usageCount])
   @@index([category])
+}
+
+model AccessKey {
+  id         String    @id @default(cuid())
+  key        String    @unique
+  isRedeemed Boolean   @default(false)
+  redeemedBy String?   @unique
+  redeemedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  redeemer User? @relation(fields: [redeemedBy], references: [id])
 }
