@@ -12,17 +12,21 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  username      String    @unique
-  email         String    @unique
-  passwordHash  String
-  isAdmin       Boolean   @default(false)
-  creditsFree   Int       @default(0) @map("credits_free")
-  creditsFreeLastGrantAt DateTime? @map("credits_free_last_grant_at")
-  nsfwEnabled  Boolean   @default(false) @map("nsfw_enabled")
-  avatarUrl     String?   @map("avatar_url")
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
+  id                  String    @id @default(uuid())
+  username            String    @unique
+  email               String    @unique
+  passwordHash        String
+  isAdmin             Boolean   @default(false)
+  creditsFree         Int        @default(0) @map("credits_free")
+  creditsFreeLastGrantAt DateTime?   @map("credits_free_last_grant_at")
+  nsfwEnabled         Boolean   @default(false) @map("nsfw_enabled")
+  avatarUrl           String?    @map("avatar_url")
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+
+  // Opposite relations
+  images              Image[]
+  likes               Like[]
 
   @@unique([username, email])
 }
@@ -33,30 +37,35 @@ model Image {
   user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   title               String
-  description          String?
-  promptTags          String?   @map("prompt_tags")
+  description         String?
+  promptTags          String?    @map("prompt_tags")
   contentRating       String    @default("safe") @map("content_rating")
   
   imageUrl            String    @map("image_url")
-  thumbnailUrl         String?   @map("thumbnail_url")
+  thumbnailUrl         String?    @map("thumbnail_url")
   filename            String
-  thumbnailFilename   String?   @map("thumbnail_filename")
+  thumbnailFilename     String?    @map("thumbnail_filename")
   
   width               Int
   height              Int
   size                Int
   
-  viewCount           Int       @default(0) @map("view_count")
-  likeCount           Int       @default(0) @map("like_count")
-  dislikeCount        Int       @default(0) @map("dislike_count")
+  viewCount           Int        @default(0) @map("view_count")
+  likeCount           Int        @default(0) @map("like_count")
+  dislikeCount        Int        @default(0) @map("dislike_count")
   
   createdAt           DateTime   @default(now()) @map("created_at")
   updatedAt           DateTime   @updatedAt @map("updated_at")
   
   // Character tags - EXPLICIT MAPPING to snake_case columns
-  maleCharacterTags   String?   @map("male_character_tags")
-  femaleCharacterTags String?   @map("female_character_tags")
-  otherCharacterTags  String?   @map("other_character_tags")
+  maleCharacterTags   String?    @map("male_character_tags")
+  femaleCharacterTags String?    @map("female_character_tags")
+  otherCharacterTags  String?    @map("other_character_tags")
+
+  // Opposite relations
+  likes               Like[]
+  imageTags           ImageTag[]
+  imageStyles         ImageStyle[]
 
   @@index([userId])
   @@index([createdAt])
@@ -67,36 +76,42 @@ model Tag {
   id                String    @id @default(uuid())
   name              String    @unique
   
-  loras             String[]  @default([])
-  minStrength        Float?    @map("min_strength")
-  maxStrength        Float?    @map("max_strength")
-  forcedPromptTags  String?   @map("forced_prompt_tags")
-  description       String?
+  loras             String[]   @default([])
+  minStrength        Float?     @map("min_strength")
+  maxStrength        Float?     @map("max_strength")
+  forcedPromptTags  String?    @map("forced_prompt_tags")
+  description        String?
   
   nsfw              Boolean   @default(false)
   
   // Character tags in Tag model
-  maleCharacterTags   String?   @map("male_character_tags")
-  femaleCharacterTags String?   @map("female_character_tags")
-  otherCharacterTags  String?   @map("other_character_tags")
+  maleCharacterTags   String?    @map("male_character_tags")
+  femaleCharacterTags String?    @map("female_character_tags")
+  otherCharacterTags  String?    @map("other_character_tags")
   
-  usageCount        Int       @default(0) @map("usage_count")
+  usageCount        Int        @default(0) @map("usage_count")
   createdAt         DateTime   @default(now()) @map("created_at")
   updatedAt         DateTime   @updatedAt @map("updated_at")
   
   slider            Boolean   @default(false)
-  sliderLowText     String?   @map("slider_low_text")
-  sliderHighText    String?   @map("slider_high_text")
+  sliderLowText     String?    @map("slider_low_text")
+  sliderHighText    String?    @map("slider_high_text")
+
+  // Opposite relation
+  imageTags          ImageTag[]
 }
 
 model Style {
   id             String    @id @default(uuid())
   name           String    @unique
   description     String?
-  checkpointName  String?   @map("checkpoint_name")
-  usageCount     Int       @default(0) @map("usage_count")
+  checkpointName  String?    @map("checkpoint_name")
+  usageCount     Int        @default(0) @map("usage_count")
   createdAt      DateTime   @default(now()) @map("created_at")
   updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  // Opposite relation
+  imageStyles        ImageStyle[]
 }
 
 model Like {
