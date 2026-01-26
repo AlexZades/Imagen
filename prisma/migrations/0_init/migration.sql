@@ -118,18 +118,6 @@ CREATE TABLE "SimpleTag" (
     CONSTRAINT "SimpleTag_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "AccessKey" (
-    "id" TEXT NOT NULL,
-    "key" TEXT NOT NULL,
-    "isRedeemed" BOOLEAN NOT NULL DEFAULT false,
-    "redeemedBy" TEXT,
-    "redeemedAt" TIMESTAMP(3),
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "AccessKey_pkey" PRIMARY KEY ("id")
-);
-
 -- CreateIndex
 CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
@@ -164,10 +152,6 @@ CREATE UNIQUE INDEX "SimpleTag_tag_key" ON "SimpleTag"("tag");
 CREATE INDEX "SimpleTag_usageCount_idx" ON "SimpleTag"("usageCount");
 CREATE INDEX "SimpleTag_category_idx" ON "SimpleTag"("category");
 
--- CreateIndex
-CREATE UNIQUE INDEX "AccessKey_key_key" ON "AccessKey"("key");
-CREATE UNIQUE INDEX "AccessKey_redeemedBy_key" ON "AccessKey"("redeemedBy");
-
 -- AddForeignKey
 ALTER TABLE "Image" ADD CONSTRAINT "Image_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -182,9 +166,6 @@ ALTER TABLE "ImageTag" ADD CONSTRAINT "ImageTag_tagId_fkey" FOREIGN KEY ("tagId"
 -- AddForeignKey
 ALTER TABLE "ImageStyle" ADD CONSTRAINT "ImageStyle_imageId_fkey" FOREIGN KEY ("imageId") REFERENCES "Image"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "ImageStyle" ADD CONSTRAINT "ImageStyle_styleId_fkey" FOREIGN KEY ("styleId") REFERENCES "Style"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "AccessKey" ADD CONSTRAINT "AccessKey_redeemedBy_fkey" FOREIGN KEY ("redeemedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- TRIGGER: Auto-populate SimpleTag directly from Image.promptTags
 -- Function to parse promptTags and update SimpleTag counts
