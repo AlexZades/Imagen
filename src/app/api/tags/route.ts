@@ -39,7 +39,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, loras, minStrength, maxStrength, forcedPromptTags, nsfw, maleCharacterTags, femaleCharacterTags, otherCharacterTags } = await request.json();
+    const { 
+      name, 
+      description,
+      loras, 
+      minStrength, 
+      maxStrength, 
+      forcedPromptTags, 
+      nsfw, 
+      maleCharacterTags, 
+      femaleCharacterTags, 
+      otherCharacterTags,
+      slider,
+      sliderLowText,
+      sliderHighText
+    } = await request.json();
 
     if (!name) {
       return NextResponse.json({ message: 'Tag name is required' }, { status: 400 });
@@ -57,6 +71,7 @@ export async function POST(request: NextRequest) {
     const newTag = await prisma.tag.create({
       data: {
         name,
+        description,
         loras: loras || [],
         minStrength,
         maxStrength,
@@ -65,6 +80,9 @@ export async function POST(request: NextRequest) {
         maleCharacterTags,
         femaleCharacterTags,
         otherCharacterTags,
+        slider: slider || false,
+        sliderLowText,
+        sliderHighText,
       }
     });
 

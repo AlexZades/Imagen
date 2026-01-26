@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
 import { useAuth } from '@/contexts/auth-context';
 import { useCredits } from '@/contexts/credits-context';
 import { Sparkles, Loader2, Wand2, X } from 'lucide-react';
@@ -17,6 +18,7 @@ import { toast } from 'sonner';
 interface Tag {
   id: string;
   name: string;
+  description?: string;
   loras?: string[];
   minStrength?: number;
   maxStrength?: number;
@@ -24,6 +26,9 @@ interface Tag {
   maleCharacterTags?: string;
   femaleCharacterTags?: string;
   otherCharacterTags?: string;
+  slider?: boolean;
+  sliderLowText?: string;
+  sliderHighText?: string;
 }
 
 interface Style {
@@ -114,31 +119,60 @@ function CreateForm() {
 
   // Update LoRA configs when tags are selected
   useEffect(() => {
-    const newConfigs: LoraConfig[] = [];
+    setLoraConfigs((prevConfigs) => {
+      const nextConfigs: LoraConfig[] = [];
+      let currentCount = 0;
 
-    selectedTagIds.forEach((tagId) => {
-      const tag = tags.find((t) => t.id === tagId);
-      if (tag && tag.loras && tag.loras.length > 0) {
-        tag.loras.forEach((lora) => {
-          // Only add if we haven't reached 4 LoRAs yet
-          if (newConfigs.length < 4) {
-            const minStrength = tag.minStrength !== undefined ? tag.minStrength : 1;
-            const maxStrength = tag.maxStrength !== undefined ? tag.maxStrength : 1;
+      for (const tagId of selectedTagIds) {
+        const tag = tags.find((t) => t.id === tagId);
+        if (tag && tag.loras && tag.loras.length > 0) {
+          for (const lora of tag.loras) {
+            if (currentCount >= 4) break;
 
-            // Generate random weight between min and max
-            const randomWeight = minStrength + Math.random() * (maxStrength - minStrength);
+            const existingConfig = prevConfigs.find((c) => c.name === lora);
+            
+            if (existingConfig) {
+              nextConfigs.push(existingConfig);
+            } else {
+              const minStrength = tag.minStrength !== undefined ? tag.minStrength : 1;
+              const maxStrength = tag.maxStrength !== undefined ? tag.maxStrength : 1;
+              
+              let weight;
+              if (tag.slider) {
+                // For slider tags, default to the middle value or max if equal
+                weight = minStrength === maxStrength ? minStrength : (minStrength + maxStrength) / 2;
+              } else {
+                // For normal tags, random weight
+                weight = minStrength + Math.random() * (maxStrength - minStrength);
+              }
 
-            newConfigs.push({
-              name: lora,
-              weight: parseFloat(randomWeight.toFixed(2)),
-            });
+              nextConfigs.push({
+                name: lora,
+                weight: parseFloat(weight.toFixed(2)),
+              });
+            }
+            currentCount++;
           }
-        });
+        }
+        if (currentCount >= 4) break;
       }
+      return nextConfigs;
     });
-
-    setLoraConfigs(newConfigs);
   }, [selectedTagIds, tags]);
+
+  const handleWeightChange = (tagId: string, newWeight: number) => {
+    const tag = tags.find((t) => t.id === tagId);
+    if (!tag || !tag.loras) return;
+
+    setLoraConfigs((prev) => 
+      prev.map((config) => {
+        if (tag.loras!.includes(config.name)) {
+          return { ...config, weight: newWeight };
+        }
+        return config;
+      })
+    );
+  };
 
   // Derived state for locked character tags
   const lockedMaleTags = selectedTagIds
@@ -219,13 +253,13 @@ function CreateForm() {
     setShowReveal(false);
 
     try {
-      // Randomize LoRA weights again on each generation
+      // Randomize LoRA weights again on each generation (ONLY for non-slider tags)
       const randomizedConfigs = loraConfigs.map((config) => {
         const tag = selectedTagIds
           .map((id) => tags.find((t) => t.id === id))
           .find((t) => t?.loras?.includes(config.name));
 
-        if (tag) {
+        if (tag && !tag.slider) {
           const minStrength = tag.minStrength !== undefined ? tag.minStrength : 1;
           const maxStrength = tag.maxStrength !== undefined ? tag.maxStrength : 1;
           const randomWeight = minStrength + Math.random() * (maxStrength - minStrength);
@@ -876,6 +910,45 @@ function CreateForm() {
                       </div>
                     )}
                   </div>
+
+                  {/* Slider Tags */}
+                  {selectedTagIds.map(tagId => {
+                    const tag = tags.find(t => t.id === tagId);
+                    if (!tag || !tag.slider || !tag.loras || tag.loras.length === 0) return null;
+
+                    // Determine current weight from the first LoRA in this tag
+                    // (Assuming all LoRAs in a tag share the same weight for now)
+                    const loraName = tag.loras[0];
+                    const config = loraConfigs.find(c => c.name === loraName);
+                    const currentWeight = config ? config.weight : ((tag.minStrength || 0) + (tag.maxStrength || 1)) / 2;
+
+                    return (
+                      <div key={tagId} className="space-y-3 p-3 border rounded-md bg-muted/30">
+                        <div className="flex justify-between items-center">
+                          <Label className="text-sm font-medium">{tag.name}</Label>
+                          {tag.description && (
+                             <span className="text-xs text-muted-foreground">{tag.description}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-muted-foreground w-16 text-right">
+                            {tag.sliderLowText || 'Low'}
+                          </span>
+                          <Slider
+                            value={[currentWeight]}
+                            min={tag.minStrength ?? 0}
+                            max={tag.maxStrength ?? 2}
+                            step={0.05}
+                            onValueChange={(vals) => handleWeightChange(tagId, vals[0])}
+                            className="flex-1"
+                          />
+                          <span className="text-xs text-muted-foreground w-16">
+                            {tag.sliderHighText || 'High'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
 
                   {forcedTagsPreview && (
                     <div className="space-y-2">

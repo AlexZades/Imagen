@@ -62,6 +62,7 @@ model Image {
 model Tag {
   id               String   @id @default(cuid())
   name             String   @unique
+  description      String?
   loras            String[] @default([])
   minStrength      Float?
   maxStrength      Float?
@@ -69,6 +70,10 @@ model Tag {
   nsfw             Boolean  @default(false)
   usageCount       Int      @default(0)
   createdAt        DateTime @default(now())
+
+  slider           Boolean  @default(false)
+  sliderLowText    String?  @map("slider_low_text")
+  sliderHighText   String?  @map("slider_high_text")
 
   maleCharacterTags   String? @map("male_character_tags")
   femaleCharacterTags String? @map("female_character_tags")

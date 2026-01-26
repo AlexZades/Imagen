@@ -3,7 +3,23 @@ import { prisma } from '@/lib/prisma';
 
 export async function PUT(request: NextRequest) {
   try {
-    const { userId, tagId, name, loras, minStrength, maxStrength, forcedPromptTags, nsfw, maleCharacterTags, femaleCharacterTags, otherCharacterTags } = await request.json();
+    const { 
+      userId, 
+      tagId, 
+      name, 
+      description,
+      loras, 
+      minStrength, 
+      maxStrength, 
+      forcedPromptTags, 
+      nsfw, 
+      maleCharacterTags, 
+      femaleCharacterTags, 
+      otherCharacterTags,
+      slider,
+      sliderLowText,
+      sliderHighText
+    } = await request.json();
 
     if (!userId || !tagId) {
       return NextResponse.json(
@@ -29,6 +45,7 @@ export async function PUT(request: NextRequest) {
       where: { id: tagId },
       data: {
         ...(name !== undefined && { name }),
+        ...(description !== undefined && { description }),
         ...(loras !== undefined && { loras }),
         ...(minStrength !== undefined && { minStrength }),
         ...(maxStrength !== undefined && { maxStrength }),
@@ -37,6 +54,9 @@ export async function PUT(request: NextRequest) {
         ...(maleCharacterTags !== undefined && { maleCharacterTags }),
         ...(femaleCharacterTags !== undefined && { femaleCharacterTags }),
         ...(otherCharacterTags !== undefined && { otherCharacterTags }),
+        ...(slider !== undefined && { slider }),
+        ...(sliderLowText !== undefined && { sliderLowText }),
+        ...(sliderHighText !== undefined && { sliderHighText }),
       }
     });
 
