@@ -77,6 +77,10 @@ function CreateForm() {
       const tagIdsParam = searchParams.get('tagIds');
       const promptParam = searchParams.get('promptTags');
       const aspectParam = searchParams.get('aspect');
+      
+      const maleTagsParam = searchParams.get('maleTags');
+      const femaleTagsParam = searchParams.get('femaleTags');
+      const otherTagsParam = searchParams.get('otherTags');
 
       // Note: We aren't restoring character tags from URL params yet as they weren't in the spec, 
       // but could be added if needed.
@@ -101,6 +105,10 @@ function CreateForm() {
       if (aspectParam && ['1', '2', '3', '4'].includes(aspectParam)) {
         setAspectRatio(aspectParam);
       }
+      
+      if (maleTagsParam) setMaleTags(maleTagsParam);
+      if (femaleTagsParam) setFemaleTags(femaleTagsParam);
+      if (otherTagsParam) setOtherTags(otherTagsParam);
     }
   }, [isLoadingData, searchParams, styles, tags]);
 

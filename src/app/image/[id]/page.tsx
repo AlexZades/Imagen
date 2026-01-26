@@ -305,6 +305,11 @@ export default function ImageDetailPage() {
     if (tags.length > 0) params.set('tagIds', tags.map(t => t.id).join(','));
     params.set('aspect', getAspectRatioKey(image.width, image.height));
     
+    // Pass character tags
+    if (image.maleCharacterTags) params.set('maleTags', image.maleCharacterTags);
+    if (image.femaleCharacterTags) params.set('femaleTags', image.femaleCharacterTags);
+    if (image.otherCharacterTags) params.set('otherTags', image.otherCharacterTags);
+    
     router.push(`/create?${params.toString()}`);
   };
 
@@ -421,7 +426,7 @@ export default function ImageDetailPage() {
               {(hasSpeechBubbles || isAdmin) && (
                 <Button
                   variant="secondary"
-                  onClick={() => router.push(`/image/${image.id}/edit-bubbles`)}
+                  onClick={() => router.push(`/image/${image.id}/edit-bubbles`) }
                   className="gap-2"
                 >
                   <MessageSquare className="w-4 h-4" />
@@ -513,7 +518,7 @@ export default function ImageDetailPage() {
                   <span className="text-xs">Style</span>
                 </div>
                 {styles.length > 0 ? (
-                  <Link href={`/search?style=${styles[0].id}`}>
+                  <Link href={`/search?style=${styles[0].id}`} >
                     <p className="font-medium hover:underline cursor-pointer truncate">
                       {styles[0].name}
                     </p>
@@ -529,7 +534,7 @@ export default function ImageDetailPage() {
                 <h3 className="font-semibold mb-2">Simple Tags</h3>
                 <div className="flex flex-wrap gap-2">
                   {simpleTags.map((tag, index) => (
-                    <Link key={index} href={`/search?simpleTag=${encodeURIComponent(tag)}`}>
+                    <Link key={index} href={`/search?simpleTag=${encodeURIComponent(tag)}`} >
                       <Badge variant="default" className="cursor-pointer hover:bg-primary/80">
                         {tag}
                       </Badge>
@@ -544,7 +549,7 @@ export default function ImageDetailPage() {
                 <h3 className="font-semibold mb-2">Characters</h3>
                 <div className="flex flex-wrap gap-2">
                   {uniqueCharacters.map((char, index) => (
-                    <Link key={index} href={`/search?simpleTag=${encodeURIComponent(char)}`}>
+                    <Link key={index} href={`/search?simpleTag=${encodeURIComponent(char)}`} >
                       <Badge variant="outline" className="cursor-pointer hover:bg-muted border-primary/20 text-primary">
                         {char}
                       </Badge>
@@ -559,7 +564,7 @@ export default function ImageDetailPage() {
                 <h3 className="font-semibold mb-2">Tags</h3>
                 <div className="flex flex-wrap gap-2">
                   {tags.map((tag) => (
-                    <Link key={tag.id} href={`/search?tag=${tag.id}`}>
+                    <Link key={tag.id} href={`/search?tag=${tag.id}`} >
                       <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80">
                         {tag.name}
                       </Badge>
@@ -586,7 +591,7 @@ export default function ImageDetailPage() {
             
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {visibleSimilarImages.map((similarImage) => (
-                <Link key={similarImage.id} href={`/image/${similarImage.id}`}>
+                <Link key={similarImage.id} href={`/image/${similarImage.id}`} >
                   <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
                     <div className="aspect-square relative overflow-hidden bg-muted">
                       <img
