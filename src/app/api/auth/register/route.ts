@@ -5,13 +5,42 @@ import { grantDailyFreeCreditsIfNeeded } from '@/lib/credits';
 
 export async function POST(request: NextRequest) {
   try {
-    const { username, email, password } = await request.json();
+    const { username, email, password, accessKey } = await request.json();
 
     if (!username || !email || !password) {
       return NextResponse.json(
         { message: 'Username, email, and password are required' },
         { status: 400 }
       );
+    }
+
+    // Check for access key requirement
+    const accessKeysEnabled = process.env.ENABLE_ACCESS_KEYS === 'true';
+    if (accessKeysEnabled) {
+      if (!accessKey) {
+        return NextResponse.json(
+          { message: 'Access key is required' },
+          { status: 400 }
+        );
+      }
+
+      const keyRecord = await prisma.accessKey.findUnique({
+        where: { key: accessKey },
+      });
+
+      if (!keyRecord) {
+        return NextResponse.json(
+          { message: 'Invalid access key' },
+          { status: 400 }
+        );
+      }
+
+      if (keyRecord.redeemed) {
+        return NextResponse.json(
+          { message: 'Access key has already been redeemed' },
+          { status: 400 }
+        );
+      }
     }
 
     if (password.length < 6) {
@@ -39,16 +68,32 @@ export async function POST(request: NextRequest) {
     const userCount = await prisma.user.count();
     const isFirstUser = userCount === 0;
 
-    const created = await prisma.user.create({
-      data: {
-        username,
-        email,
-        passwordHash: hashPassword(password),
-        isAdmin: isFirstUser,
-      },
-      select: {
-        id: true,
-      },
+    // Use a transaction to ensure user creation and key redemption happen together
+    const created = await prisma.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
+          username,
+          email,
+          passwordHash: hashPassword(password),
+          isAdmin: isFirstUser,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (accessKeysEnabled && accessKey) {
+        await tx.accessKey.update({
+          where: { key: accessKey },
+          data: {
+            redeemed: true,
+            redeemedAt: new Date(),
+            userId: newUser.id,
+          },
+        });
+      }
+
+      return newUser;
     });
 
     // Daily free credits grant (acts as initial credit allocation too)
