@@ -2,8 +2,6 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/contexts/auth-context';
-import { useCredits } from '@/contexts/credits-context';
 import { Navbar } from '@/components/navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/auth-context';
+import { useCredits } from '@/contexts/credits-context';
 import { Sparkles, Loader2, Wand2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -77,9 +77,6 @@ function CreateForm() {
       const tagIdsParam = searchParams.get('tagIds');
       const promptParam = searchParams.get('promptTags');
       const aspectParam = searchParams.get('aspect');
-      const maleCharacterTagsParam = searchParams.get('maleCharacterTags');
-      const femaleCharacterTagsParam = searchParams.get('femaleCharacterTags');
-      const otherCharacterTagsParam = searchParams.get('otherCharacterTags');
 
       // Note: We aren't restoring character tags from URL params yet as they weren't in the spec, 
       // but could be added if needed.
@@ -104,17 +101,6 @@ function CreateForm() {
       if (aspectParam && ['1', '2', '3', '4'].includes(aspectParam)) {
         setAspectRatio(aspectParam);
       }
-
-      // Handle character tags from URL parameters
-      if (maleCharacterTagsParam) {
-        setMaleTags(maleCharacterTagsParam);
-      }
-      if (femaleCharacterTagsParam) {
-        setFemaleTags(femaleCharacterTagsParam);
-      }
-      if (otherCharacterTagsParam) {
-        setOtherTags(otherCharacterTagsParam);
-      }
     }
   }, [isLoadingData, searchParams, styles, tags]);
 
@@ -130,6 +116,8 @@ function CreateForm() {
           if (newConfigs.length < 4) {
             const minStrength = tag.minStrength !== undefined ? tag.minStrength : 1;
             const maxStrength = tag.maxStrength !== undefined ? tag.maxStrength : 1;
+
+            // Generate random weight between min and max
             const randomWeight = minStrength + Math.random() * (maxStrength - minStrength);
 
             newConfigs.push({
@@ -143,6 +131,22 @@ function CreateForm() {
 
     setLoraConfigs(newConfigs);
   }, [selectedTagIds, tags]);
+
+  // Derived state for locked character tags
+  const lockedMaleTags = selectedTagIds
+    .map(id => tags.find(t => t.id === id)?.maleCharacterTags)
+    .filter(Boolean)
+    .join(', ');
+  
+  const lockedFemaleTags = selectedTagIds
+    .map(id => tags.find(t => t.id === id)?.femaleCharacterTags)
+    .filter(Boolean)
+    .join(', ');
+
+  const lockedOtherTags = selectedTagIds
+    .map(id => tags.find(t => t.id === id)?.otherCharacterTags)
+    .filter(Boolean)
+    .join(', ');
 
   const fetchData = async () => {
     try {
