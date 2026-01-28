@@ -64,6 +64,7 @@ function CreateForm() {
   const [title, setTitle] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [previousImage, setPreviousImage] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [showReveal, setShowReveal] = useState(false);
   const [isImageFadingOut, setIsImageFadingOut] = useState(false);
@@ -246,6 +247,7 @@ function CreateForm() {
 
     // Start the fade out process if an image exists
     if (generatedImage) {
+      setPreviousImage(generatedImage);
       setIsImageFadingOut(true);
       // Wait for the fade-out animation to complete
       await new Promise((resolve) => setTimeout(resolve, 400));
@@ -1166,8 +1168,8 @@ function CreateForm() {
             </div>
 
             {/* Right Column - Preview */}
-            <div>
-              <Card className="sticky top-4">
+            <div className="space-y-6">
+              <Card className="sticky top-4 z-20">
                 <CardHeader>
                   <CardTitle>Preview</CardTitle>
                   <CardDescription>Your generated image will appear here</CardDescription>
@@ -1249,6 +1251,33 @@ function CreateForm() {
                   </div>
                 </CardContent>
               </Card>
+
+              {previousImage && (
+                <Card className="opacity-80 hover:opacity-100 transition-opacity">
+                  <CardHeader className="py-4">
+                    <CardTitle className="text-base">Previous Generation</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div
+                      className={`bg-muted rounded-lg flex items-center justify-center overflow-hidden relative transition-all duration-300 ${
+                        aspectRatio === '1'
+                          ? 'aspect-square'
+                          : aspectRatio === '2'
+                            ? 'aspect-[3/4]'
+                            : aspectRatio === '3'
+                              ? 'aspect-[4/3]'
+                              : 'aspect-[16/9]'
+                      }`}
+                    >
+                      <img
+                        src={previousImage}
+                        alt="Previous Generation"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </div>
