@@ -63,6 +63,7 @@ function CreateForm() {
   const [cfgScale, setCfgScale] = useState<number>(6);
   const [title, setTitle] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [previousImage, setPreviousImage] = useState<string | null>(null);
@@ -263,6 +264,7 @@ function CreateForm() {
     }
 
     setIsGenerating(true);
+    setStatusMessage('Initiating...');
     setGeneratedImage(null);
     setShowReveal(false);
 
@@ -358,13 +360,45 @@ function CreateForm() {
         throw new Error(error.message || 'Generation failed');
       }
 
-      const data = await response.json();
+      const initialData = await response.json();
+      
+      if (initialData?.credits && typeof initialData?.credits?.remainingFree === 'number') {
+        updateUser({ creditsFree: initialData.credits.remainingFree });
+      }
+
+      const requestId = initialData.requestId;
+      let status = initialData.status;
+      let data = null;
+
+      while (status === 'pending' || status === 'processing') {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const statusRes = await fetch(`/api/generate/${requestId}`);
+        if (!statusRes.ok) {
+           // If checking status fails, try one more time or fail?
+           // Let's just continue and hope next poll works, unless 404
+           if (statusRes.status === 404) throw new Error('Generation request lost');
+           continue;
+        }
+        
+        const statusData = await statusRes.json();
+        status = statusData.status;
+        
+        if (status === 'pending') {
+            setStatusMessage(`Queued (Position: ${statusData.position || '?'}, Est: ${statusData.estimatedTime || '?'}s)`);
+        } else if (status === 'processing') {
+            setStatusMessage('Generating Image...');
+        } else if (status === 'completed') {
+            data = statusData.result;
+        } else if (status === 'failed') {
+            throw new Error(statusData.error || 'Generation failed');
+        }
+      }
+
+      if (!data) throw new Error('No data received');
+
       setGeneratedImage(`data:${data.contentType};base64,${data.image}`);
       setShowReveal(true);
-
-      if (data?.credits && typeof data?.credits?.remainingFree === 'number') {
-        updateUser({ creditsFree: data.credits.remainingFree });
-      }
 
       // Auto-fill title if empty
       if (!title) {
@@ -384,6 +418,7 @@ function CreateForm() {
       toast.error(error.message || 'Failed to generate image');
     } finally {
       setIsGenerating(false);
+      setStatusMessage('');
       setIsImageFadingOut(false);
     }
   };
@@ -1214,10 +1249,10 @@ function CreateForm() {
                               <Sparkles className="w-16 h-16 text-white mx-auto drop-shadow-lg" />
                             </div>
                             <p className="text-white font-semibold text-lg drop-shadow-lg">
-                              Creating Magic...
+                              {statusMessage || 'Creating Magic...'}
                             </p>
                             <p className="text-white/90 text-sm mt-2 drop-shadow-lg">
-                              This may take ~30 seconds
+                               {statusMessage.includes('Queued') ? 'Please wait...' : 'This may take ~30 seconds'}
                             </p>
                           </div>
 

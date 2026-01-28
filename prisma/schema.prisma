@@ -167,3 +167,19 @@ model AccessKey {
 
   redeemer User? @relation(fields: [redeemedBy], references: [id])
 }
+
+model GenerationRequest {
+  id        String   @id @default(cuid())
+  userId    String?
+  status    String   @default("pending") // pending, processing, completed, failed
+  params    String   // JSON string
+  result    String?  // Text (base64 or url)
+  error     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([createdAt])
+}
