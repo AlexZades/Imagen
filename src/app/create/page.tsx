@@ -1188,8 +1188,8 @@ function CreateForm() {
             </div>
 
             {/* Right Column - Preview */}
-            <div className="space-y-6">
-              <Card className="sticky top-4 z-20">
+            <div className="space-y-6 sticky top-4 h-fit">
+              <Card>
                 <CardHeader>
                   <CardTitle>Preview</CardTitle>
                   <CardDescription>Your generated image will appear here</CardDescription>
