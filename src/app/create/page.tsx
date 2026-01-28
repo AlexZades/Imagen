@@ -68,6 +68,7 @@ function CreateForm() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [showReveal, setShowReveal] = useState(false);
   const [isImageFadingOut, setIsImageFadingOut] = useState(false);
+  const [showPreviousSparkles, setShowPreviousSparkles] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -253,6 +254,8 @@ function CreateForm() {
     // Start the fade out process if an image exists
     if (generatedImage) {
       setPreviousImage(generatedImage);
+      setShowPreviousSparkles(true);
+      setTimeout(() => setShowPreviousSparkles(false), 800);
       setIsImageFadingOut(true);
       // Wait for the fade-out animation to complete
       await new Promise((resolve) => setTimeout(resolve, 400));
@@ -1275,10 +1278,27 @@ function CreateForm() {
                       }`}
                     >
                       <img
+                        key={previousImage}
                         src={previousImage}
                         alt="Previous Generation"
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-contain animate-in fade-in duration-700"
                       />
+                      {showPreviousSparkles && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                          <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                          <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                          <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                          <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                          <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                          <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                          <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                          <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                          <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                          <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                          <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                          <div className="sparkle-burst" style={{ top: '50%', left: '50%' }}></div>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
