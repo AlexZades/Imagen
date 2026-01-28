@@ -34,6 +34,7 @@ interface GenerationConfig {
   random4CharProbability: number;
   styleVariationProbability: number;
   loraWeightVariation: number;
+  defaultSeed: number;
 }
 
 const DEFAULT_CONFIG: GenerationConfig = {
@@ -59,6 +60,7 @@ const DEFAULT_CONFIG: GenerationConfig = {
   random4CharProbability: 0.02,
   styleVariationProbability: 0.3,
   loraWeightVariation: 0.5,
+  defaultSeed: 1234567890,
 };
 
 const PRESETS = {
@@ -202,6 +204,16 @@ export function GenerationSettings({ userId }: { userId: string }) {
                   max={20}
                   step={1}
                   tooltip="Total number of images to generate per user in each batch"
+                />
+
+                <SettingInput
+                  label="Default Seed"
+                  value={config.defaultSeed || 1234567890}
+                  onChange={(v) => updateConfig('defaultSeed', v)}
+                  min={0}
+                  max={2147483647}
+                  step={1}
+                  tooltip="Default seed used for generation when not specified"
                 />
 
                 <SettingInput

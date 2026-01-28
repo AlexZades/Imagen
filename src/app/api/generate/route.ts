@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt_tags, model_name, lora_names, lora_weights, aspect, userId, consumeCredits } =
+    const { prompt_tags, model_name, lora_names, lora_weights, aspect, userId, consumeCredits, seed, cfg } =
       await request.json();
 
     if (!prompt_tags || !model_name) {
@@ -80,6 +80,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Determine seed
+    let finalSeed = seed;
+    if (finalSeed === undefined || finalSeed === null) {
+      try {
+        const configRecord = await prisma.generationConfig.findUnique({
+          where: { key: 'algorithm_settings' }
+        });
+        
+        if (configRecord && configRecord.value) {
+          const settings = JSON.parse(configRecord.value);
+          if (settings.defaultSeed !== undefined) {
+            finalSeed = settings.defaultSeed;
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching default seed:", e);
+      }
+      
+      // Fallback
+      if (finalSeed === undefined) {
+        finalSeed = 1234567890;
+      }
+    }
+
     const fullUrl = `${comfyuiUrl}/generate`;
     
     // Build the request body
@@ -87,6 +111,8 @@ export async function POST(request: NextRequest) {
       prompt_tags,
       model_name,
       aspect: aspect || 1, // Default to square if not provided
+      seed: parseInt(String(finalSeed)),
+      cfg_scale: String(cfg || 6.0),
     };
 
     // Handle multiple LoRAs (up to 4)

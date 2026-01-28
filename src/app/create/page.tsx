@@ -10,9 +10,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/auth-context';
 import { useCredits } from '@/contexts/credits-context';
-import { Sparkles, Loader2, Wand2, X } from 'lucide-react';
+import { Sparkles, Loader2, Wand2, X, Shuffle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Tag {
@@ -59,6 +60,7 @@ function CreateForm() {
   const [otherTags, setOtherTags] = useState('');
   
   const [loraConfigs, setLoraConfigs] = useState<LoraConfig[]>([]);
+  const [cfgScale, setCfgScale] = useState<number>(6);
   const [title, setTitle] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -220,7 +222,7 @@ function CreateForm() {
 
   const canAffordGeneration = user?.isAdmin || !creditsEnabled || (user?.creditsFree ?? 0) >= creditCost;
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (customSeed?: number) => {
     if (!promptTags.trim() && !maleTags && !femaleTags && !otherTags && !lockedMaleTags && !lockedFemaleTags && !lockedOtherTags) {
       toast.error('Please enter prompt tags or characters');
       return;
@@ -335,6 +337,8 @@ function CreateForm() {
           lora_names: loraNames.length > 0 ? loraNames : undefined,
           lora_weights: loraWeights.length > 0 ? loraWeights : undefined,
           aspect: parseInt(aspectRatio),
+          seed: customSeed,
+          cfg: cfgScale,
         }),
       });
 
@@ -826,208 +830,244 @@ function CreateForm() {
                   <CardDescription>Configure your image generation</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="style">Style</Label>
-                    <Select value={selectedStyle} onValueChange={setSelectedStyle} disabled={isLoadingData}>
-                      <SelectTrigger id="style">
-                        <SelectValue
-                          placeholder={isLoadingData ? 'Loading styles...' : 'Select a style'}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {styles.map((style) => (
-                          <SelectItem key={style.id} value={style.id}>
-                            {style.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {selectedStyle && styles.find((s) => s.id === selectedStyle)?.description && (
-                      <p className="text-sm text-muted-foreground">
-                        {styles.find((s) => s.id === selectedStyle)?.description}
-                      </p>
-                    )}
-                  </div>
+                  <Tabs defaultValue="general" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 mb-4">
+                      <TabsTrigger value="general">General</TabsTrigger>
+                      <TabsTrigger value="advanced">Advanced</TabsTrigger>
+                    </TabsList>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="aspect">Aspect Ratio</Label>
-                    <Select value={aspectRatio} onValueChange={setAspectRatio} disabled={isGenerating}>
-                      <SelectTrigger id="aspect">
-                        <SelectValue placeholder="Select aspect ratio" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">Square (1:1)</SelectItem>
-                        <SelectItem value="2">Portrait (3:4)</SelectItem>
-                        <SelectItem value="3">Landscape (4:3)</SelectItem>
-                        <SelectItem value="4">Landscape Wide (16:9)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                    <TabsContent value="general" className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="style">Style</Label>
+                        <Select value={selectedStyle} onValueChange={setSelectedStyle} disabled={isLoadingData}>
+                          <SelectTrigger id="style">
+                            <SelectValue
+                              placeholder={isLoadingData ? 'Loading styles...' : 'Select a style'}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {styles.map((style) => (
+                              <SelectItem key={style.id} value={style.id}>
+                                {style.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {selectedStyle && styles.find((s) => s.id === selectedStyle)?.description && (
+                          <p className="text-sm text-muted-foreground">
+                            {styles.find((s) => s.id === selectedStyle)?.description}
+                          </p>
+                        )}
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label>Tags (Optional) - Max 4</Label>
-                    <Select
-                      value=""
-                      onValueChange={handleAddTag}
-                      disabled={selectedTagIds.length >= 4 || isLoadingData}
-                    >
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={
-                            selectedTagIds.length >= 4
-                              ? 'Maximum 4 tags reached'
-                              : 'Add a tag...'
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableTagsForSelection.map((tag) => (
-                          <SelectItem key={tag.id} value={tag.id}>
-                            {tag.name}
-                            {tag.loras && tag.loras.length > 0 && (
-                              <span className="text-xs text-muted-foreground ml-2">
-                                ({tag.loras.length} LoRA{tag.loras.length > 1 ? 's' : ''})
+                      <div className="space-y-2">
+                        <Label htmlFor="aspect">Aspect Ratio</Label>
+                        <Select value={aspectRatio} onValueChange={setAspectRatio} disabled={isGenerating}>
+                          <SelectTrigger id="aspect">
+                            <SelectValue placeholder="Select aspect ratio" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1">Square (1:1)</SelectItem>
+                            <SelectItem value="2">Portrait (3:4)</SelectItem>
+                            <SelectItem value="3">Landscape (4:3)</SelectItem>
+                            <SelectItem value="4">Landscape Wide (16:9)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Tags (Optional) - Max 4</Label>
+                        <Select
+                          value=""
+                          onValueChange={handleAddTag}
+                          disabled={selectedTagIds.length >= 4 || isLoadingData}
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={
+                                selectedTagIds.length >= 4
+                                  ? 'Maximum 4 tags reached'
+                                  : 'Add a tag...'
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableTagsForSelection.map((tag) => (
+                              <SelectItem key={tag.id} value={tag.id}>
+                                {tag.name}
+                                {tag.loras && tag.loras.length > 0 && (
+                                  <span className="text-xs text-muted-foreground ml-2">
+                                    ({tag.loras.length} LoRA{tag.loras.length > 1 ? 's' : ''})
+                                  </span>
+                                )}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        {selectedTagIds.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {selectedTagIds.map((tagId) => {
+                              const tag = tags.find((t) => t.id === tagId);
+                              return tag ? (
+                                <Badge key={tagId} variant="secondary" className="gap-1">
+                                  {tag.name}
+                                  <X
+                                    className="w-3 h-3 cursor-pointer"
+                                    onClick={() => handleRemoveTag(tagId)}
+                                  />
+                                </Badge>
+                              ) : null;
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Slider Tags */}
+                      {selectedTagIds.map(tagId => {
+                        const tag = tags.find(t => t.id === tagId);
+                        if (!tag || !tag.slider || !tag.loras || tag.loras.length === 0) return null;
+
+                        // Determine current weight from the first LoRA in this tag
+                        // (Assuming all LoRAs in a tag share the same weight for now)
+                        const loraName = tag.loras[0];
+                        const config = loraConfigs.find(c => c.name === loraName);
+                        const currentWeight = config ? config.weight : ((tag.minStrength || 0) + (tag.maxStrength || 1)) / 2;
+
+                        return (
+                          <div key={tagId} className="space-y-3 p-3 border rounded-md bg-muted/30">
+                            <div className="flex justify-between items-center">
+                              <Label className="text-sm font-medium">{tag.name}</Label>
+                              {tag.description && (
+                                 <span className="text-xs text-muted-foreground">{tag.description}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs text-muted-foreground w-16 text-right">
+                                {tag.sliderLowText || 'Low'}
                               </span>
-                            )}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    {selectedTagIds.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {selectedTagIds.map((tagId) => {
-                          const tag = tags.find((t) => t.id === tagId);
-                          return tag ? (
-                            <Badge key={tagId} variant="secondary" className="gap-1">
-                              {tag.name}
-                              <X
-                                className="w-3 h-3 cursor-pointer"
-                                onClick={() => handleRemoveTag(tagId)}
+                              <Slider
+                                value={[currentWeight]}
+                                min={tag.minStrength ?? 0}
+                                max={tag.maxStrength ?? 2}
+                                step={0.05}
+                                onValueChange={(vals) => handleWeightChange(tagId, vals[0])}
+                                className="flex-1"
                               />
-                            </Badge>
-                          ) : null;
-                        })}
-                      </div>
-                    )}
-                  </div>
+                              <span className="text-xs text-muted-foreground w-16">
+                                {tag.sliderHighText || 'High'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
 
-                  {/* Slider Tags */}
-                  {selectedTagIds.map(tagId => {
-                    const tag = tags.find(t => t.id === tagId);
-                    if (!tag || !tag.slider || !tag.loras || tag.loras.length === 0) return null;
-
-                    // Determine current weight from the first LoRA in this tag
-                    // (Assuming all LoRAs in a tag share the same weight for now)
-                    const loraName = tag.loras[0];
-                    const config = loraConfigs.find(c => c.name === loraName);
-                    const currentWeight = config ? config.weight : ((tag.minStrength || 0) + (tag.maxStrength || 1)) / 2;
-
-                    return (
-                      <div key={tagId} className="space-y-3 p-3 border rounded-md bg-muted/30">
-                        <div className="flex justify-between items-center">
-                          <Label className="text-sm font-medium">{tag.name}</Label>
-                          {tag.description && (
-                             <span className="text-xs text-muted-foreground">{tag.description}</span>
-                          )}
+                      {forcedTagsPreview && (
+                        <div className="space-y-2">
+                          <Label>Auto-included Tags</Label>
+                          <div className="bg-muted p-3 rounded-md">
+                            <p className="text-sm text-muted-foreground">{forcedTagsPreview}</p>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs text-muted-foreground w-16 text-right">
-                            {tag.sliderLowText || 'Low'}
-                          </span>
-                          <Slider
-                            value={[currentWeight]}
-                            min={tag.minStrength ?? 0}
-                            max={tag.maxStrength ?? 2}
-                            step={0.05}
-                            onValueChange={(vals) => handleWeightChange(tagId, vals[0])}
-                            className="flex-1"
-                          />
-                          <span className="text-xs text-muted-foreground w-16">
-                            {tag.sliderHighText || 'High'}
-                          </span>
+                      )}
+
+                      <div className="space-y-4 border-t pt-4">
+                        <Label>Characters</Label>
+                        
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="space-y-1.5">
+                            <Label htmlFor="maleTags" className="text-xs text-muted-foreground">Male</Label>
+                            <Input
+                              id="maleTags"
+                              placeholder="Names..."
+                              value={maleTags}
+                              onChange={(e) => setMaleTags(e.target.value)}
+                              disabled={isGenerating}
+                              className="h-8 text-sm"
+                            />
+                            {lockedMaleTags && (
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                {lockedMaleTags.split(',').map((tag, i) => (
+                                  <Badge key={i} variant="secondary" className="text-[10px] h-5 px-1 bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-200">
+                                    {tag.trim()}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <Label htmlFor="femaleTags" className="text-xs text-muted-foreground">Female</Label>
+                            <Input
+                              id="femaleTags"
+                              placeholder="Names..."
+                              value={femaleTags}
+                              onChange={(e) => setFemaleTags(e.target.value)}
+                              disabled={isGenerating}
+                              className="h-8 text-sm"
+                            />
+                            {lockedFemaleTags && (
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                {lockedFemaleTags.split(',').map((tag, i) => (
+                                  <Badge key={i} variant="secondary" className="text-[10px] h-5 px-1 bg-pink-100 text-pink-800 hover:bg-pink-200 border-pink-200">
+                                    {tag.trim()}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <Label htmlFor="otherTags" className="text-xs text-muted-foreground">Other</Label>
+                            <Input
+                              id="otherTags"
+                              placeholder="Names..."
+                              value={otherTags}
+                              onChange={(e) => setOtherTags(e.target.value)}
+                              disabled={isGenerating}
+                              className="h-8 text-sm"
+                            />
+                            {lockedOtherTags && (
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                {lockedOtherTags.split(',').map((tag, i) => (
+                                  <Badge key={i} variant="secondary" className="text-[10px] h-5 px-1 bg-purple-100 text-purple-800 hover:bg-purple-200 border-purple-200">
+                                    {tag.trim()}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    );
-                  })}
+                    </TabsContent>
 
-                  {forcedTagsPreview && (
-                    <div className="space-y-2">
-                      <Label>Auto-included Tags</Label>
-                      <div className="bg-muted p-3 rounded-md">
-                        <p className="text-sm text-muted-foreground">{forcedTagsPreview}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-4 border-t pt-4">
-                    <Label>Characters</Label>
-                    
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="maleTags" className="text-xs text-muted-foreground">Male</Label>
-                        <Input
-                          id="maleTags"
-                          placeholder="Names..."
-                          value={maleTags}
-                          onChange={(e) => setMaleTags(e.target.value)}
-                          disabled={isGenerating}
-                          className="h-8 text-sm"
-                        />
-                        {lockedMaleTags && (
-                          <div className="flex flex-wrap gap-1 mt-1.5">
-                            {lockedMaleTags.split(',').map((tag, i) => (
-                              <Badge key={i} variant="secondary" className="text-[10px] h-5 px-1 bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-200">
-                                {tag.trim()}
-                              </Badge>
-                            ))}
+                    <TabsContent value="advanced" className="space-y-4">
+                       <div className="space-y-4 p-4 border rounded-md bg-muted/20">
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <Label htmlFor="cfg-scale">CFG Scale (Creativity vs. Prompt Adherence)</Label>
+                              <span className="text-sm font-medium">{cfgScale.toFixed(1)}</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs text-muted-foreground w-12 text-right">Weak (5)</span>
+                              <Slider
+                                id="cfg-scale"
+                                value={[cfgScale]}
+                                min={5}
+                                max={7}
+                                step={0.1}
+                                onValueChange={(vals) => setCfgScale(vals[0])}
+                                className="flex-1"
+                              />
+                              <span className="text-xs text-muted-foreground w-12">Strong (7)</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Lower values (5) allow more creative freedom. Higher values (7) follow your prompt more strictly. Default is 6.
+                            </p>
                           </div>
-                        )}
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="femaleTags" className="text-xs text-muted-foreground">Female</Label>
-                        <Input
-                          id="femaleTags"
-                          placeholder="Names..."
-                          value={femaleTags}
-                          onChange={(e) => setFemaleTags(e.target.value)}
-                          disabled={isGenerating}
-                          className="h-8 text-sm"
-                        />
-                        {lockedFemaleTags && (
-                          <div className="flex flex-wrap gap-1 mt-1.5">
-                            {lockedFemaleTags.split(',').map((tag, i) => (
-                              <Badge key={i} variant="secondary" className="text-[10px] h-5 px-1 bg-pink-100 text-pink-800 hover:bg-pink-200 border-pink-200">
-                                {tag.trim()}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="otherTags" className="text-xs text-muted-foreground">Other</Label>
-                        <Input
-                          id="otherTags"
-                          placeholder="Names..."
-                          value={otherTags}
-                          onChange={(e) => setOtherTags(e.target.value)}
-                          disabled={isGenerating}
-                          className="h-8 text-sm"
-                        />
-                        {lockedOtherTags && (
-                          <div className="flex flex-wrap gap-1 mt-1.5">
-                            {lockedOtherTags.split(',').map((tag, i) => (
-                              <Badge key={i} variant="secondary" className="text-[10px] h-5 px-1 bg-purple-100 text-purple-800 hover:bg-purple-200 border-purple-200">
-                                {tag.trim()}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                       </div>
+                    </TabsContent>
+                  </Tabs>
 
                   <div className="space-y-2">
                     <Label htmlFor="promptTags">Prompt Tags</Label>
@@ -1043,34 +1083,55 @@ function CreateForm() {
                     </p>
                   </div>
 
-                  <Button
-                    onClick={handleGenerate}
-                    disabled={
-                      isGenerating ||
-                      !promptTags.trim() ||
-                      !selectedStyle ||
-                      (creditsEnabled && !canAffordGeneration)
-                    }
-                    className="w-full"
-                    size="lg"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Generating...
-                      </>
-                    ) : creditsEnabled && !canAffordGeneration ? (
-                      <>
-                        <Wand2 className="w-4 h-4 mr-2" />
-                        Not enough credits
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="w-4 h-4 mr-2" />
-                        Generate Image
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => handleGenerate()}
+                      disabled={
+                        isGenerating ||
+                        !promptTags.trim() ||
+                        !selectedStyle ||
+                        (creditsEnabled && !canAffordGeneration)
+                      }
+                      className="flex-1"
+                      size="lg"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : creditsEnabled && !canAffordGeneration ? (
+                        <>
+                          <Wand2 className="w-4 h-4 mr-2" />
+                          Not enough credits
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="w-4 h-4 mr-2" />
+                          Generate Image
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      onClick={() => {
+                        const randomSeed = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+                        handleGenerate(randomSeed);
+                      }}
+                      disabled={
+                        isGenerating ||
+                        !promptTags.trim() ||
+                        !selectedStyle ||
+                        (creditsEnabled && !canAffordGeneration)
+                      }
+                      variant="outline"
+                      size="lg"
+                      className="px-3"
+                      title="Generate Slightly Different (Random Seed)"
+                    >
+                      <Shuffle className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
