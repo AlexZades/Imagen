@@ -89,6 +89,7 @@ function CreateForm() {
       const maleTagsParam = searchParams.get('maleTags');
       const femaleTagsParam = searchParams.get('femaleTags');
       const otherTagsParam = searchParams.get('otherTags');
+      const previousImageParam = searchParams.get('previousImage');
 
       // Note: We aren't restoring character tags from URL params yet as they weren't in the spec, 
       // but could be added if needed.
@@ -117,6 +118,10 @@ function CreateForm() {
       if (maleTagsParam) setMaleTags(maleTagsParam);
       if (femaleTagsParam) setFemaleTags(femaleTagsParam);
       if (otherTagsParam) setOtherTags(otherTagsParam);
+
+      if (previousImageParam) {
+        setPreviousImage(previousImageParam);
+      }
     }
   }, [isLoadingData, searchParams, styles, tags]);
 

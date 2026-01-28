@@ -318,6 +318,9 @@ export default function ImageDetailPage() {
     if (image.maleCharacterTags) params.set('maleTags', image.maleCharacterTags);
     if (image.femaleCharacterTags) params.set('femaleTags', image.femaleCharacterTags);
     if (image.otherCharacterTags) params.set('otherTags', image.otherCharacterTags);
+
+    // Pass the image URL for "previous generation" preview
+    params.set('previousImage', image.imageUrl);
     
     router.push(`/create?${params.toString()}`);
   };
