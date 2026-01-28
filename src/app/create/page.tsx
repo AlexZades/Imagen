@@ -63,6 +63,7 @@ function CreateForm() {
   const [cfgScale, setCfgScale] = useState<number>(6);
   const [title, setTitle] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [previousImage, setPreviousImage] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -398,6 +399,8 @@ function CreateForm() {
       return;
     }
 
+    setIsSaving(true);
+
     try {
       // Convert base64 to blob
       const base64Data = generatedImage.split(',')[1];
@@ -463,6 +466,8 @@ function CreateForm() {
     } catch (error: any) {
       console.error('Save error:', error);
       toast.error(error.message || 'Failed to save image');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1164,11 +1169,18 @@ function CreateForm() {
 
                     <Button
                       onClick={handleSave}
-                      disabled={!title.trim()}
+                      disabled={!title.trim() || isSaving}
                       className="w-full"
                       variant="default"
                     >
-                      Save to Gallery
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Save to Gallery'
+                      )}
                     </Button>
                   </CardContent>
                 </Card>
