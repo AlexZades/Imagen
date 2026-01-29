@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Dialog,
   DialogContent,
@@ -528,8 +529,22 @@ export default function ImageDetailPage() {
                   <UserIcon className="w-4 h-4" />
                   User
                 </h3>
-                <Link href={`/user/${imageUser.id}`} className="hover:underline">
-                  {imageUser.username}
+                <Link href={`/user/${imageUser.id}`} className="flex items-center gap-3 hover:underline group">
+                  <Avatar className="w-8 h-8 rounded-lg">
+                    {imageUser.avatarUrl && (
+                      <AvatarImage 
+                        src={imageUser.avatarUrl} 
+                        alt={imageUser.username} 
+                        className="object-cover"
+                      />
+                    )}
+                    <AvatarFallback className="rounded-lg text-xs">
+                      {imageUser.username[0].toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium group-hover:text-primary transition-colors">
+                    {imageUser.username}
+                  </span>
                 </Link>
               </div>
             )}
