@@ -30,7 +30,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Heart, ThumbsDown, Eye, User as UserIcon, Calendar, Maximize2, Palette, Edit, Trash2, Save, RefreshCw, MessageSquare } from 'lucide-react';
+import { Heart, ThumbsDown, Eye, User as UserIcon, Calendar, Maximize2, Palette, Edit, Trash2, Save, RefreshCw, MessageSquare, ShieldAlert } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Image {
   id: string;
@@ -41,6 +48,7 @@ interface Image {
   maleCharacterTags?: string;
   femaleCharacterTags?: string;
   otherCharacterTags?: string;
+  contentRating: string;
   imageUrl: string;
   thumbnailUrl?: string;
   width: number;
@@ -107,6 +115,7 @@ export default function ImageDetailPage() {
   const [editMaleTags, setEditMaleTags] = useState('');
   const [editFemaleTags, setEditFemaleTags] = useState('');
   const [editOtherTags, setEditOtherTags] = useState('');
+  const [editContentRating, setEditContentRating] = useState('safe');
   const [isSaving, setIsSaving] = useState(false);
 
   // Delete state
@@ -265,6 +274,7 @@ export default function ImageDetailPage() {
       setEditMaleTags(image.maleCharacterTags || '');
       setEditFemaleTags(image.femaleCharacterTags || '');
       setEditOtherTags(image.otherCharacterTags || '');
+      setEditContentRating(image.contentRating || 'safe');
       setIsEditDialogOpen(true);
     }
   };
@@ -286,6 +296,7 @@ export default function ImageDetailPage() {
           maleCharacterTags: editMaleTags,
           femaleCharacterTags: editFemaleTags,
           otherCharacterTags: editOtherTags,
+          contentRating: editContentRating,
         }),
       });
 
@@ -539,6 +550,16 @@ export default function ImageDetailPage() {
                   <p className="text-muted-foreground">None</p>
                 )}
               </div>
+
+              <div>
+                <div className="flex items-center gap-1 text-muted-foreground mb-1">
+                  <ShieldAlert className="w-3 h-3" />
+                  <span className="text-xs">Rating</span>
+                </div>
+                <p className="font-medium capitalize">
+                  {image.contentRating || 'Safe'}
+                </p>
+              </div>
             </div>
 
             {simpleTags.length > 0 && (
@@ -680,6 +701,22 @@ export default function ImageDetailPage() {
                 placeholder="Enter description..."
                 rows={3}
               />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="editContentRating" className="text-sm font-medium">
+                Content Rating
+              </label>
+              <Select value={editContentRating} onValueChange={setEditContentRating}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select rating" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="safe">Safe</SelectItem>
+                  <SelectItem value="questionable">Questionable</SelectItem>
+                  <SelectItem value="explicit">Explicit</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
