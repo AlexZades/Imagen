@@ -48,6 +48,11 @@ export function SetProfileModal({ isOpen, onClose, imageUrl, userId, onSuccess }
   const [isSaving, setIsSaving] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
+  // Use proxy for images to avoid CORS issues when drawing to canvas
+  const displayUrl = imageUrl.startsWith('http') 
+    ? `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`
+    : imageUrl;
+
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     const { width, height } = e.currentTarget;
     setCrop(centerAspectCrop(width, height, 1));
@@ -181,7 +186,7 @@ export function SetProfileModal({ isOpen, onClose, imageUrl, userId, onSuccess }
               <img
                 ref={imgRef}
                 alt="Crop me"
-                src={imageUrl}
+                src={displayUrl}
                 onLoad={onImageLoad}
                 style={{ maxHeight: '50vh', maxWidth: '100%', objectFit: 'contain' }}
                 crossOrigin="anonymous" // Important for canvas taint issues if on different domain
