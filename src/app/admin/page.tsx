@@ -38,6 +38,7 @@ import { GenerationSettings } from '@/components/admin/generation-settings';
 import { StorageMigration } from '@/components/admin/storage-migration';
 import { CreditsSettings } from '@/components/admin/credits-settings';
 import { AccessKeysManager } from '@/components/admin/access-keys-manager';
+import { StyleImageGenerator } from '@/components/admin/style-image-generator';
 import { toast } from 'sonner';
 import { Edit, Trash2, Plus, X, Save, Settings, Wrench } from 'lucide-react';
 
@@ -65,6 +66,7 @@ interface Style {
   description?: string;
   usageCount: number;
   checkpointName?: string;
+  demoImageThumbnailUrl?: string;
 }
 
 export default function AdminPage() {
@@ -999,190 +1001,216 @@ export default function AdminPage() {
           </TabsContent>
 
           <TabsContent value="styles" className="mt-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Manage Styles</CardTitle>
-                    <CardDescription>
-                      Configure checkpoint/model settings for styles
-                    </CardDescription>
-                  </div>
-                  <Dialog open={isNewStyleDialogOpen} onOpenChange={setIsNewStyleDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button>
-                        <Plus className="w-4 h-4 mr-2" />
-                        New Style
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Create New Style</DialogTitle>
-                        <DialogDescription>
-                          Add a new style with checkpoint configuration
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="newStyleName">Style Name *</Label>
-                          <Input
-                            id="newStyleName"
-                            value={newStyleName}
-                            onChange={(e) => setNewStyleName(e.target.value)}
-                            placeholder="Enter style name..."
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="newStyleDescription">Description</Label>
-                          <Textarea
-                            id="newStyleDescription"
-                            value={newStyleDescription}
-                            onChange={(e) => setNewStyleDescription(e.target.value)}
-                            placeholder="Enter style description..."
-                            rows={3}
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="newStyleCheckpoint">Checkpoint Name</Label>
-                          <Input
-                            id="newStyleCheckpoint"
-                            value={newStyleCheckpoint}
-                            onChange={(e) => setNewStyleCheckpoint(e.target.value)}
-                            placeholder="model_name.safetensors"
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsNewStyleDialogOpen(false)}>
-                          Cancel
+            <div className="space-y-6">
+              <StyleImageGenerator userId={user.id} />
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Manage Styles</CardTitle>
+                      <CardDescription>
+                        Configure checkpoint/model settings for styles
+                      </CardDescription>
+                    </div>
+                    <Dialog open={isNewStyleDialogOpen} onOpenChange={setIsNewStyleDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Plus className="w-4 h-4 mr-2" />
+                          New Style
                         </Button>
-                        <Button onClick={handleCreateStyle}>Create Style</Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Checkpoint</TableHead>
-                      <TableHead>Usage</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {styles.length === 0 ? (
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Create New Style</DialogTitle>
+                          <DialogDescription>
+                            Add a new style with checkpoint configuration
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="newStyleName">Style Name *</Label>
+                            <Input
+                              id="newStyleName"
+                              value={newStyleName}
+                              onChange={(e) => setNewStyleName(e.target.value)}
+                              placeholder="Enter style name..."
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="newStyleDescription">Description</Label>
+                            <Textarea
+                              id="newStyleDescription"
+                              value={newStyleDescription}
+                              onChange={(e) => setNewStyleDescription(e.target.value)}
+                              placeholder="Enter style description..."
+                              rows={3}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="newStyleCheckpoint">Checkpoint Name</Label>
+                            <Input
+                              id="newStyleCheckpoint"
+                              value={newStyleCheckpoint}
+                              onChange={(e) => setNewStyleCheckpoint(e.target.value)}
+                              placeholder="model_name.safetensors"
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setIsNewStyleDialogOpen(false)}>
+                            Cancel
+                          </Button>
+                          <Button onClick={handleCreateStyle}>Create Style</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                          No styles found. Create your first style to get started.
-                        </TableCell>
+                        <TableHead>Preview</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Checkpoint</TableHead>
+                        <TableHead>Usage</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ) : (
-                      styles.map((style) => (
-                        <TableRow key={style.id}>
-                          {editingStyleId === style.id ? (
-                            <>
-                              <TableCell>
-                                <Input
-                                  value={editStyleData.name || ''}
-                                  onChange={(e) =>
-                                    setEditStyleData({ ...editStyleData, name: e.target.value })
-                                  }
-                                  className="max-w-xs"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Textarea
-                                  value={editStyleData.description || ''}
-                                  onChange={(e) =>
-                                    setEditStyleData({ ...editStyleData, description: e.target.value })
-                                  }
-                                  className="max-w-md"
-                                  rows={2}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  value={editStyleData.checkpointName || ''}
-                                  onChange={(e) =>
-                                    setEditStyleData({ ...editStyleData, checkpointName: e.target.value })
-                                  }
-                                  className="max-w-xs"
-                                  placeholder="model_name.safetensors"
-                                />
-                              </TableCell>
-                              <TableCell>{style.usageCount}</TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="default"
-                                    onClick={() => saveStyle(style.id)}
-                                  >
-                                    <Save className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={cancelEditingStyle}
-                                  >
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </>
-                          ) : (
-                            <>
-                              <TableCell className="font-medium">{style.name}</TableCell>
-                              <TableCell>
-                                {style.description ? (
-                                  <span className="text-sm">{style.description}</span>
-                                ) : (
-                                  <span className="text-muted-foreground text-sm">No description</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {style.checkpointName ? (
-                                  <code className="text-xs bg-muted px-2 py-1 rounded">
-                                    {style.checkpointName}
-                                  </code>
-                                ) : (
-                                  <span className="text-muted-foreground text-sm">Not set</span>
-                                )}
-                              </TableCell>
-                              <TableCell>{style.usageCount}</TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => startEditingStyle(style)}
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => deleteStyle(style.id)}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </>
-                          )}
+                    </TableHeader>
+                    <TableBody>
+                      {styles.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                            No styles found. Create your first style to get started.
+                          </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                      ) : (
+                        styles.map((style) => (
+                          <TableRow key={style.id}>
+                            {editingStyleId === style.id ? (
+                              <>
+                                <TableCell>
+                                  {style.demoImageThumbnailUrl && (
+                                    <img 
+                                      src={style.demoImageThumbnailUrl} 
+                                      alt={style.name} 
+                                      className="w-12 h-12 object-cover rounded-md" 
+                                    />
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    value={editStyleData.name || ''}
+                                    onChange={(e) =>
+                                      setEditStyleData({ ...editStyleData, name: e.target.value })
+                                    }
+                                    className="max-w-xs"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Textarea
+                                    value={editStyleData.description || ''}
+                                    onChange={(e) =>
+                                      setEditStyleData({ ...editStyleData, description: e.target.value })
+                                    }
+                                    className="max-w-md"
+                                    rows={2}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    value={editStyleData.checkpointName || ''}
+                                    onChange={(e) =>
+                                      setEditStyleData({ ...editStyleData, checkpointName: e.target.value })
+                                    }
+                                    className="max-w-xs"
+                                    placeholder="model_name.safetensors"
+                                  />
+                                </TableCell>
+                                <TableCell>{style.usageCount}</TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="default"
+                                      onClick={() => saveStyle(style.id)}
+                                    >
+                                      <Save className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={cancelEditingStyle}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </>
+                            ) : (
+                              <>
+                                <TableCell>
+                                  {style.demoImageThumbnailUrl ? (
+                                    <img 
+                                      src={style.demoImageThumbnailUrl} 
+                                      alt={style.name} 
+                                      className="w-12 h-12 object-cover rounded-md" 
+                                    />
+                                  ) : (
+                                    <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center text-xs text-muted-foreground">
+                                      No img
+                                    </div>
+                                  )}
+                                </TableCell>
+                                <TableCell className="font-medium">{style.name}</TableCell>
+                                <TableCell>
+                                  {style.description ? (
+                                    <span className="text-sm">{style.description}</span>
+                                  ) : (
+                                    <span className="text-muted-foreground text-sm">No description</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {style.checkpointName ? (
+                                    <code className="text-xs bg-muted px-2 py-1 rounded">
+                                      {style.checkpointName}
+                                    </code>
+                                  ) : (
+                                    <span className="text-muted-foreground text-sm">Not set</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>{style.usageCount}</TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => startEditingStyle(style)}
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => deleteStyle(style.id)}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </>
+                            )}
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="maintenance" className="mt-6">

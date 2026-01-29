@@ -742,7 +742,7 @@ async function generateRandomImage(
 
 // ==================== ComfyUI Integration ====================
 
-async function callComfyUIAPI(
+export async function callComfyUIAPI(
   promptTags: string,
   modelName: string,
   loraNames: string[],

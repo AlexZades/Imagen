@@ -95,6 +95,12 @@ model Style {
   usageCount     Int      @default(0)
   createdAt      DateTime @default(now())
 
+  // Demo image fields
+  demoImageUrl           String?  @map("demo_image_url")
+  demoImageThumbnailUrl  String?  @map("demo_image_thumbnail_url")
+  demoImageFilename      String?  @map("demo_image_filename")
+  demoImageThumbnailFilename String? @map("demo_image_thumbnail_filename")
+
   imageStyles ImageStyle[]
 }
 
