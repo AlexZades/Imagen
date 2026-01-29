@@ -25,6 +25,7 @@ model User {
   images      Image[]
   likes       Like[]
   redeemedKey AccessKey?
+  generationRequests GenerationRequest[]
 
   @@index([email])
   @@index([username])
