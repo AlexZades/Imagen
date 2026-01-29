@@ -20,6 +20,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -30,7 +36,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Heart, ThumbsDown, Eye, User as UserIcon, Calendar, Maximize2, Palette, Edit, Trash2, Save, RefreshCw, MessageSquare, ShieldAlert } from 'lucide-react';
+import { Heart, ThumbsDown, Eye, User as UserIcon, Calendar, Maximize2, Palette, Edit, Trash2, Save, RefreshCw, MessageSquare, ShieldAlert, MoreVertical } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -38,6 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { SetProfileModal } from '@/components/set-profile-modal';
 
 interface Image {
   id: string;
@@ -109,6 +116,7 @@ export default function ImageDetailPage() {
 
   // Edit state
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isSetProfileOpen, setIsSetProfileOpen] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editPromptTags, setEditPromptTags] = useState('');
@@ -457,6 +465,22 @@ export default function ImageDetailPage() {
                 </Button>
               )}
 
+              {user && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setIsSetProfileOpen(true)}>
+                      <UserIcon className="mr-2 h-4 w-4" />
+                      Set as profile
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+
               <div className="flex items-center gap-2 text-muted-foreground ml-auto">
                 <Eye className="w-4 h-4" />
                 {image.viewCount} views
@@ -800,6 +824,19 @@ export default function ImageDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {user && image && (
+        <SetProfileModal
+          isOpen={isSetProfileOpen}
+          onClose={() => setIsSetProfileOpen(false)}
+          imageUrl={image.imageUrl}
+          userId={user.id}
+          onSuccess={(url) => {
+            // Optional: Reload page or update user context if needed
+            // For now, the toast in the modal is sufficient feedback
+          }}
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
