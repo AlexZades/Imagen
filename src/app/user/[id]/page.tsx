@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Navbar } from '@/components/navbar';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Pagination,
@@ -231,7 +231,7 @@ export default function UserProfilePage() {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {images.map((image) => (
-          <Link key={image.id} href={`/image/${image.id}`}>
+          <Link key={image.id} href={`/image/${image.id}`} >
             <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
               <div className="aspect-square relative bg-muted">
                 <img
@@ -267,8 +267,15 @@ export default function UserProfilePage() {
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
-            <Avatar className="w-20 h-20">
-              <AvatarFallback className="text-2xl">
+            <Avatar className="w-24 h-24 rounded-2xl">
+              {user?.avatarUrl && (
+                <AvatarImage 
+                  src={user.avatarUrl} 
+                  alt={user.username} 
+                  className="object-cover"
+                />
+              )}
+              <AvatarFallback className="text-3xl rounded-2xl">
                 {user?.username ? user.username[0].toUpperCase() : 'U'}
               </AvatarFallback>
             </Avatar>
