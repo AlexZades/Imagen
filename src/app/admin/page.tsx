@@ -441,6 +441,25 @@ export default function AdminPage() {
     }
   };
 
+  const handleFixDatabase = async () => {
+    if (!confirm('This will attempt to sync the database schema. Continue?')) return;
+    
+    setIsRegenerating(true);
+    try {
+      const response = await fetch('/api/admin/fix-db', { method: 'POST' });
+      const data = await response.json();
+      
+      if (!response.ok) throw new Error(data.message || 'Failed to sync database');
+      
+      toast.success('Database synced successfully');
+      window.location.reload();
+    } catch (error: any) {
+      toast.error(`Error: ${error.message}`);
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -1223,6 +1242,23 @@ export default function AdminPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <h3 className="font-medium">Sync Database Schema</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Use this if you encounter "column does not exist" errors after an update.
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={handleFixDatabase} 
+                      disabled={isRegenerating}
+                      variant="outline"
+                    >
+                       <Wrench className="w-4 h-4 mr-2" />
+                       Fix Database
+                    </Button>
+                  </div>
+
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div>
                       <h3 className="font-medium">Regenerate Thumbnails</h3>
