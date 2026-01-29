@@ -6,6 +6,7 @@ import { Navbar } from '@/components/navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -856,9 +857,22 @@ function CreateForm() {
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between gap-3 mb-8">
-            <div className="flex items-center gap-3">
-              <Sparkles className="w-8 h-8 text-primary" />
-              <h1 className="text-3xl font-bold">Create Image</h1>
+            <div className="space-y-1">
+              <div className="flex items-center gap-3">
+                <Sparkles className="w-8 h-8 text-primary" />
+                <h1 className="text-3xl font-bold">Create Image</h1>
+              </div>
+              <div className="flex items-center gap-2 ml-11">
+                <Avatar className="w-5 h-5 rounded-md">
+                  <AvatarImage src={user.avatarUrl} alt={user.username} />
+                  <AvatarFallback className="text-[10px] rounded-md">
+                    {user.username?.[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm text-muted-foreground font-medium">
+                  {user.username}
+                </span>
+              </div>
             </div>
 
             {creditsEnabled && (
