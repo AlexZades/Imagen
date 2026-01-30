@@ -13,8 +13,9 @@ import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/auth-context';
 import { useCredits } from '@/contexts/credits-context';
-import { Sparkles, Loader2, Wand2, X, Shuffle } from 'lucide-react';
+import { Sparkles, Loader2, Wand2, X, Shuffle, Grid, ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { StyleGallery } from '@/components/style-gallery';
 
 interface Tag {
   id: string;
@@ -37,6 +38,8 @@ interface Style {
   name: string;
   description?: string;
   checkpointName?: string;
+  demoImageThumbnailUrl?: string;
+  demoImageUrl?: string;
 }
 
 interface LoraConfig {
@@ -71,6 +74,7 @@ function CreateForm() {
   const [showReveal, setShowReveal] = useState(false);
   const [isImageFadingOut, setIsImageFadingOut] = useState(false);
   const [showPreviousSparkles, setShowPreviousSparkles] = useState(false);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -889,24 +893,65 @@ function CreateForm() {
                     <TabsContent value="general" className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="style">Style</Label>
-                        <Select value={selectedStyle} onValueChange={setSelectedStyle} disabled={isLoadingData}>
-                          <SelectTrigger id="style">
-                            <SelectValue
-                              placeholder={isLoadingData ? 'Loading styles...' : 'Select a style'}
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {styles.map((style) => (
-                              <SelectItem key={style.id} value={style.id}>
-                                {style.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <Select value={selectedStyle} onValueChange={setSelectedStyle} disabled={isLoadingData}>
+                              <SelectTrigger id="style">
+                                <SelectValue
+                                  placeholder={isLoadingData ? 'Loading styles...' : 'Select a style'}
+                                />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {styles.map((style) => (
+                                  <SelectItem key={style.id} value={style.id}>
+                                    <div className="flex items-center gap-2">
+                                      {style.demoImageThumbnailUrl ? (
+                                        <div className="w-6 h-6 rounded overflow-hidden flex-shrink-0 border bg-muted">
+                                          <img 
+                                            src={style.demoImageThumbnailUrl} 
+                                            alt="" 
+                                            className="w-full h-full object-cover" 
+                                          />
+                                        </div>
+                                      ) : (
+                                        <div className="w-6 h-6 rounded flex-shrink-0 bg-muted flex items-center justify-center">
+                                          <ImageIcon className="w-3 h-3 text-muted-foreground opacity-50" />
+                                        </div>
+                                      )}
+                                      <span className="truncate">{style.name}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            onClick={() => setIsGalleryOpen(true)}
+                            title="Open Style Gallery"
+                            className="flex-shrink-0"
+                          >
+                            <Grid className="h-4 w-4" />
+                          </Button>
+                        </div>
                         {selectedStyle && styles.find((s) => s.id === selectedStyle)?.description && (
                           <p className="text-sm text-muted-foreground">
                             {styles.find((s) => s.id === selectedStyle)?.description}
                           </p>
+                        )}
+                        {/* Preview of selected style in the settings panel itself? Optional, but helpful */}
+                        {selectedStyle && styles.find((s) => s.id === selectedStyle)?.demoImageThumbnailUrl && (
+                          <div className="mt-2 relative rounded-md overflow-hidden border w-full h-24 sm:h-32 bg-muted">
+                            <img 
+                              src={styles.find((s) => s.id === selectedStyle)?.demoImageUrl || styles.find((s) => s.id === selectedStyle)?.demoImageThumbnailUrl} 
+                              alt="Style Preview" 
+                              className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity"
+                            />
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                              <span className="text-white text-xs font-medium">Style Preview</span>
+                            </div>
+                          </div>
                         )}
                       </div>
 
@@ -1354,6 +1399,14 @@ function CreateForm() {
           </div>
         </div>
       </main>
+
+      <StyleGallery 
+        isOpen={isGalleryOpen}
+        onClose={() => setIsGalleryOpen(false)}
+        styles={styles}
+        onSelect={setSelectedStyle}
+        selectedStyleId={selectedStyle}
+      />
     </div>
   );
 }
